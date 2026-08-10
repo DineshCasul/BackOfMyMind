@@ -1,80 +1,142 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { fromRow } from "@/lib/dreams";
 import { toLocalDateString } from "@/lib/utils";
 
 export type MoodType = "happy" | "neutral" | "sad";
+export type DreamType = "normal" | "lucid" | "nightmare" | "recurring";
 
 export type Dream = {
-  id: number;
+  id: string;
   title: string;
   description: string;
   mood: MoodType;
   date: string;
+  tags: string[];
+  dreamType: DreamType;
+  people: string[];
+  setting: string;
+  vividness: number; // 1-5
+  isPublic: boolean;
+};
+
+// Everything addDream/updateDream need, minus what the caller doesn't
+// control (id) — kept as one object rather than a growing positional
+// argument list now that there are this many fields.
+export type DreamInput = {
+  title: string;
+  description: string;
+  mood: MoodType;
+  date: string;
+  tags: string[];
+  dreamType: DreamType;
+  people: string[];
+  setting: string;
+  vividness: number;
 };
 
 export type DreamContextType = {
   dreams: Dream[];
-  addDream: (title: string, description: string, mood: MoodType, date: string) => void;
-  updateDream: (id: number, title: string, description: string, mood: MoodType) => void;
-  deleteDream: (id: number) => void;
+  loading: boolean;
+  addDream: (input: DreamInput) => Promise<void>;
+  updateDream: (id: string, input: Omit<DreamInput, "date">) => Promise<void>;
+  deleteDream: (id: string) => Promise<void>;
+  togglePublic: (id: string, isPublic: boolean) => Promise<void>;
   selectedDate: string;
   setSelectedDate: (date: string) => void;
 };
 
 const DreamContext = createContext<DreamContextType | undefined>(undefined);
 
-export function DreamProvider({ children }: { children: ReactNode }) {
+export function DreamProvider({ userId, children }: { userId: string; children: ReactNode }) {
   const [dreams, setDreams] = useState<Dream[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    toLocalDateString(new Date())
-  );
-  // Guards the save effect so it can't fire with the initial empty `dreams`
-  // state before the load effect below has had a chance to populate it from
-  // localStorage — without this, mount briefly overwrites real stored data
-  // with "[]" before immediately re-saving the real value back.
-  const hasLoaded = useRef(false);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<string>(toLocalDateString(new Date()));
+  const supabase = createClient();
 
-  // Load dreams from localStorage on mount
+  const refetch = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("dreams")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    if (!error && data) setDreams(data.map(fromRow));
+    setLoading(false);
+  }, [supabase, userId]);
+
   useEffect(() => {
-    const stored = localStorage.getItem("dreams");
-    if (stored) setDreams(JSON.parse(stored));
-    hasLoaded.current = true;
-  }, []);
+    refetch();
+  }, [refetch]);
 
-  // Save dreams to localStorage whenever they change
-  useEffect(() => {
-    if (!hasLoaded.current) return;
-    localStorage.setItem("dreams", JSON.stringify(dreams));
-  }, [dreams]);
+  const addDream = async (input: DreamInput) => {
+    const { data, error } = await supabase
+      .from("dreams")
+      .insert({
+        user_id: userId,
+        title: input.title,
+        description: input.description,
+        mood: input.mood,
+        date: input.date,
+        tags: input.tags,
+        dream_type: input.dreamType,
+        people: input.people,
+        setting: input.setting,
+        vividness: input.vividness,
+      })
+      .select()
+      .single();
 
-  const addDream = (title: string, description: string, mood: MoodType, date: string) => {
-    const newDream: Dream = {
-      // Max across all dreams, not dreams.length-1 — addDream prepends new
-      // entries, so the last array element is the *oldest* dream, and using
-      // its id+1 collides with an existing id once there are 3+ dreams.
-      id: dreams.length > 0 ? Math.max(...dreams.map((d) => d.id)) + 1 : 1,
-      title,
-      description,
-      mood,
-      date,
-    };
-    setDreams([newDream, ...dreams]);
+    if (error) throw new Error(error.message);
+    setDreams((prev) => [fromRow(data), ...prev]);
   };
 
-  const updateDream = (id: number, title: string, description: string, mood: MoodType) => {
-    setDreams((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, title, description, mood } : d))
-    );
+  const updateDream = async (id: string, input: Omit<DreamInput, "date">) => {
+    const { data, error } = await supabase
+      .from("dreams")
+      .update({
+        title: input.title,
+        description: input.description,
+        mood: input.mood,
+        tags: input.tags,
+        dream_type: input.dreamType,
+        people: input.people,
+        setting: input.setting,
+        vividness: input.vividness,
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    setDreams((prev) => prev.map((d) => (d.id === id ? fromRow(data) : d)));
   };
 
-  const deleteDream = (id: number) => {
+  const deleteDream = async (id: string) => {
+    const { error } = await supabase.from("dreams").delete().eq("id", id);
+    if (error) throw new Error(error.message);
     setDreams((prev) => prev.filter((d) => d.id !== id));
+  };
+
+  const togglePublic = async (id: string, isPublic: boolean) => {
+    const { error } = await supabase.from("dreams").update({ is_public: isPublic }).eq("id", id);
+    if (error) throw new Error(error.message);
+    setDreams((prev) => prev.map((d) => (d.id === id ? { ...d, isPublic } : d)));
   };
 
   return (
     <DreamContext.Provider
-      value={{ dreams, addDream, updateDream, deleteDream, selectedDate, setSelectedDate }}
+      value={{
+        dreams,
+        loading,
+        addDream,
+        updateDream,
+        deleteDream,
+        togglePublic,
+        selectedDate,
+        setSelectedDate,
+      }}
     >
       {children}
     </DreamContext.Provider>
