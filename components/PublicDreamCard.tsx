@@ -1,17 +1,24 @@
+import Link from "next/link";
 import { Star } from "lucide-react";
 import type { Dream } from "@/context/DreamContext";
 import { MOOD_META } from "@/lib/moods";
 import { DREAM_TYPE_META } from "@/lib/dreamTypes";
 import { cn } from "@/lib/utils";
+import LikeButton from "./LikeButton";
 
 type Props = Dream & {
   authorName: string;
+  viewerId: string;
+  likeCount: number;
+  likedByMe: boolean;
 };
 
 // Read-only — no click-to-edit, no delete, no share-to-feed toggle, since
 // these belong to someone else. Visually related to DreamCard (same mood
 // spine + icon language) but deliberately not interactive the same way.
+// Clicking through to /dream/[id] is the one interaction, plus liking.
 export default function PublicDreamCard({
+  id,
   title,
   description,
   mood,
@@ -20,12 +27,16 @@ export default function PublicDreamCard({
   dreamType,
   vividness,
   authorName,
+  viewerId,
+  likeCount,
+  likedByMe,
 }: Props) {
   const { icon: MoodIcon, label: moodLabel, colorClass } = MOOD_META[mood];
   const { icon: TypeIcon, label: typeLabel } = DREAM_TYPE_META[dreamType];
 
   return (
-    <div
+    <Link
+      href={`/dream/${id}`}
       style={{ borderLeftColor: `var(--mood-${mood})`, borderLeftWidth: 3 }}
       className="flex flex-col gap-3 p-4 rounded-lg border border-border bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20"
     >
@@ -67,10 +78,12 @@ export default function PublicDreamCard({
             />
           ))}
         </div>
-        <span className="text-xs text-muted-foreground">
-          {authorName} &middot; {date}
-        </span>
+        <LikeButton dreamId={id} userId={viewerId} initialCount={likeCount} initialLiked={likedByMe} />
       </div>
-    </div>
+
+      <div className="text-[11px] text-muted-foreground -mt-1">
+        {authorName} &middot; {date}
+      </div>
+    </Link>
   );
 }
