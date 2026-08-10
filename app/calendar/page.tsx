@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useDreams } from "@/context/DreamContext";
 import Calendar from "react-calendar";
+import type { Value } from "react-calendar/dist/shared/types.js";
 import Layout from "@/components/Layout";
 import {
   Dialog,
@@ -12,10 +13,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import DreamCard from "@/components/DreamCard";
+import { toLocalDateString, parseLocalDateString } from "@/lib/utils";
 import "react-calendar/dist/Calendar.css";
 
 export default function CalendarPage() {
-  const { dreams, selectedDate, setSelectedDate } = useDreams();
+  const { dreams, selectedDate, setSelectedDate, updateDream, deleteDream } = useDreams();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false); // <--- add mounted flag
 
@@ -26,19 +28,12 @@ export default function CalendarPage() {
   const dreamDatesSet = new Set(dreams.map((d) => d.date));
   const dreamsForSelectedDate = dreams.filter((d) => d.date === selectedDate);
 
-  const getLocalDateStr = (date: Date) =>
-    `${date.getFullYear()}-${(date.getMonth() + 1)
-      .toString()
-      .padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
-
-  const handleDateChange = (value: any) => {
+  const handleDateChange = (value: Value) => {
     if (!value) return;
-    let dateToUse: Date;
-    if (value instanceof Date) dateToUse = value;
-    else if (Array.isArray(value) && value[0] instanceof Date) dateToUse = value[0];
-    else return;
+    const dateToUse = Array.isArray(value) ? value[0] : value;
+    if (!(dateToUse instanceof Date)) return;
 
-    setSelectedDate(getLocalDateStr(dateToUse));
+    setSelectedDate(toLocalDateString(dateToUse));
     setIsModalOpen(true);
   };
 
@@ -49,21 +44,21 @@ export default function CalendarPage() {
       <h2 className="text-3xl font-bold mb-6 text-center">📅 Dream Calendar</h2>
 
       <Calendar
-        onChange={handleDateChange as any}
-        value={new Date(selectedDate)}
+        onChange={handleDateChange}
+        value={parseLocalDateString(selectedDate)}
         className="react-calendar mx-auto rounded-xl shadow-lg border border-gray-200 w-full max-w-md p-4"
         tileClassName={({ date, view }) => {
-          const dayStr = getLocalDateStr(date);
+          const dayStr = toLocalDateString(date);
           let classes = "relative transition-all duration-150 hover:bg-indigo-50";
           if (view === "month") {
             if (dreamDatesSet.has(dayStr)) classes += " font-semibold text-indigo-700";
-            const todayStr = getLocalDateStr(new Date());
+            const todayStr = toLocalDateString(new Date());
             if (dayStr === todayStr) classes += " border border-indigo-400 rounded";
           }
           return classes;
         }}
         tileContent={({ date, view }) => {
-          if (view === "month" && dreamDatesSet.has(getLocalDateStr(date))) {
+          if (view === "month" && dreamDatesSet.has(toLocalDateString(date))) {
             return (
               <span className="absolute bottom-1 left-1/2 w-2 h-2 bg-yellow-300 rounded-full transform -translate-x-1/2" />
             );
@@ -84,7 +79,23 @@ export default function CalendarPage() {
               <DialogTitle>Dreams on {selectedDate}</DialogTitle>
             </DialogHeader>
 
-           
+            {dreamsForSelectedDate.length === 0 ? (
+              <p className="text-gray-500 text-center py-6">No dreams logged for this date yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {dreamsForSelectedDate.map((dream) => (
+                  <DreamCard
+                    key={dream.id}
+                    id={dream.id}
+                    title={dream.title}
+                    description={dream.description}
+                    mood={dream.mood}
+                    onEdit={updateDream}
+                    onDelete={deleteDream}
+                  />
+                ))}
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

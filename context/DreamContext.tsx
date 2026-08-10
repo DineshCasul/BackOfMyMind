@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
+import { toLocalDateString } from "@/lib/utils";
 
 export type MoodType = "happy" | "neutral" | "sad";
 
@@ -26,23 +27,33 @@ const DreamContext = createContext<DreamContextType | undefined>(undefined);
 export function DreamProvider({ children }: { children: ReactNode }) {
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
+    toLocalDateString(new Date())
   );
+  // Guards the save effect so it can't fire with the initial empty `dreams`
+  // state before the load effect below has had a chance to populate it from
+  // localStorage — without this, mount briefly overwrites real stored data
+  // with "[]" before immediately re-saving the real value back.
+  const hasLoaded = useRef(false);
 
   // Load dreams from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem("dreams");
     if (stored) setDreams(JSON.parse(stored));
+    hasLoaded.current = true;
   }, []);
 
   // Save dreams to localStorage whenever they change
   useEffect(() => {
+    if (!hasLoaded.current) return;
     localStorage.setItem("dreams", JSON.stringify(dreams));
   }, [dreams]);
 
   const addDream = (title: string, description: string, mood: MoodType, date: string) => {
     const newDream: Dream = {
-      id: dreams.length > 0 ? dreams[dreams.length - 1].id + 1 : 1,
+      // Max across all dreams, not dreams.length-1 — addDream prepends new
+      // entries, so the last array element is the *oldest* dream, and using
+      // its id+1 collides with an existing id once there are 3+ dreams.
+      id: dreams.length > 0 ? Math.max(...dreams.map((d) => d.id)) + 1 : 1,
       title,
       description,
       mood,

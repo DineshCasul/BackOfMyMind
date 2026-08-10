@@ -8,6 +8,7 @@ import { useDreams } from "@/context/DreamContext";
 import Layout from "@/components/Layout";
 import DreamCard from "@/components/DreamCard";
 import FormModal from "@/components/FormModal";
+import { toLocalDateString, parseLocalDateString } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -19,10 +20,9 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 
-// timezone-safe formatter
 function formatDate(date: Date | undefined) {
   if (!date) return "";
-  return date.toISOString().split("T")[0]; // YYYY-MM-DD
+  return toLocalDateString(date);
 }
 
 export default function HomePage() {
@@ -44,7 +44,7 @@ export default function HomePage() {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(selectedDate);
   const [date, setDate] = React.useState<Date | undefined>(
-    selectedDate ? new Date(selectedDate) : undefined
+    selectedDate ? parseLocalDateString(selectedDate) : undefined
   );
   const [month, setMonth] = React.useState<Date | undefined>(date);
 

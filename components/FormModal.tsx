@@ -41,15 +41,16 @@ export default function FormModal({
   const [internalOpen, setInternalOpen] = useState(false);
 
   const isControlled = open !== undefined && onOpenChange !== undefined;
+  const isOpen = isControlled ? open : internalOpen;
 
   // Reset fields when opening modal
   useEffect(() => {
-    if ((isControlled ? open : internalOpen)) {
+    if (isOpen) {
       setTitle(initialTitle);
       setDescription(initialDescription);
       setMood(initialMood);
     }
-  }, [isControlled ? open : internalOpen, initialTitle, initialDescription, initialMood]);
+  }, [isOpen, initialTitle, initialDescription, initialMood]);
 
   const handleSubmit = () => {
     if (!title || !description) return;
