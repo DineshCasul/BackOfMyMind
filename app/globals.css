@@ -1,13 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-fraunces);
+  --font-logo: "logo", var(--font-fraunces), serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -37,79 +36,71 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-mood-happy: var(--mood-happy);
+  --color-mood-neutral: var(--mood-neutral);
+  --color-mood-sad: var(--mood-sad);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Starry Night — a single committed dark theme, not a light/dark toggle.
+   Hue ~265-280 throughout (indigo/periwinkle family) for a cohesive
+   night-sky feel instead of a generic gray/blue shadcn default. */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
-}
+  --radius: 0.75rem;
 
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
+  --background: oklch(0.16 0.03 265);
+  --foreground: oklch(0.95 0.012 265);
+
+  --card: oklch(0.205 0.035 267);
+  --card-foreground: oklch(0.95 0.012 265);
+
+  --popover: oklch(0.205 0.035 267);
+  --popover-foreground: oklch(0.95 0.012 265);
+
+  /* Soft moonlight lavender — the one accent color, used for links,
+     primary actions, focus rings, "today" markers. */
+  --primary: oklch(0.78 0.1 280);
+  --primary-foreground: oklch(0.18 0.03 267);
+
+  --secondary: oklch(0.26 0.035 267);
+  --secondary-foreground: oklch(0.95 0.012 265);
+
+  --muted: oklch(0.24 0.03 267);
+  --muted-foreground: oklch(0.68 0.03 270);
+
+  --accent: oklch(0.29 0.045 273);
+  --accent-foreground: oklch(0.95 0.012 265);
+
+  --destructive: oklch(0.64 0.2 25);
+
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.78 0.1 280 / 60%);
+
+  --chart-1: oklch(0.78 0.1 280);
+  --chart-2: oklch(0.8 0.15 85);
+  --chart-3: oklch(0.6 0.12 260);
+  --chart-4: oklch(0.75 0.13 200);
+  --chart-5: oklch(0.7 0.16 340);
+
+  /* Mood accents — a separate small palette from the primary lavender,
+     each with its own "night sky" story: starlight gold, moonlight
+     silver-lavender, deep night-sky indigo. */
+  --mood-happy: oklch(0.8 0.15 85);
+  --mood-neutral: oklch(0.78 0.05 280);
+  --mood-sad: oklch(0.58 0.13 260);
+
+  --sidebar: oklch(0.18 0.03 265);
+  --sidebar-foreground: oklch(0.95 0.012 265);
+  --sidebar-primary: oklch(0.78 0.1 280);
+  --sidebar-primary-foreground: oklch(0.18 0.03 267);
+  --sidebar-accent: oklch(0.26 0.035 267);
+  --sidebar-accent-foreground: oklch(0.95 0.012 265);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  --sidebar-ring: oklch(0.78 0.1 280 / 60%);
 }
 
 @layer base {
@@ -121,80 +112,58 @@
   }
 }
 
-/* Calendar container */
-.react-calendar {
-  @apply rounded-2xl shadow-xl border border-gray-200 w-full max-w-md mx-auto p-4
-         bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
-  transition: background-color 0.3s ease;
+/* Each star is a tiny individually-animated SVG <circle> (see
+   components/Starfield.tsx) — deliberately not a CSS background-image, even
+   a transform-animated one. A handful of small elements each only ever
+   compositing their own opacity is cheap regardless of hardware; a single
+   huge tiled multi-gradient layer covering (viewport + margin)² is a lot of
+   surface for the GPU to rasterize even when the animation itself is
+   composited, and that's what was still causing the stutter. No drift
+   either now — it wasn't buying much visually for what it cost. */
+@keyframes star-twinkle {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-/* Navigation container */
-.react-calendar__navigation {
-  @apply flex justify-between items-center mb-4;
+/* A slow, gentle scale+opacity pulse — used by the session-intro icon once
+   it's fully faded in, so it reads as "breathing" rather than static. */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+.animate-breathe {
+  animation: breathe 3.5s ease-in-out infinite;
 }
 
-/* Navigation label (month/year) */
-.react-calendar__navigation__label {
-  @apply font-bold text-lg text-gray-900 dark:text-white cursor-pointer;
-  transition: color 0.2s;
+/* Respect reduced-motion — every animation/transition on the site
+   collapses to effectively instant instead of being removed outright. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-/* Navigation arrows */
-.react-calendar__navigation__arrow {
-  @apply text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 p-2 rounded-full 
-         hover:bg-indigo-500 hover:text-white transition-all duration-200 cursor-pointer;
-}
-
-/* Navigation buttons spacing */
-.react-calendar__navigation button {
-  @apply px-4 py-2 rounded-full font-semibold transition-colors duration-200;
-}
-
-/* Weekdays header */
-.react-calendar__month-view__weekdays {
-  @apply text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2;
-}
-
-/* Weekdays cell */
-.react-calendar__month-view__weekdays__weekday {
-  @apply px-2 py-1 text-center;
-}
-
-/* Tiles */
-.react-calendar__tile {
-  @apply relative px-2 py-2 m-1 rounded-xl hover:bg-indigo-100 dark:hover:bg-gray-700 
-         transition-all duration-200 cursor-pointer;
-}
-
-/* Selected tile */
-.react-calendar__tile--active {
-  @apply bg-indigo-500 text-white shadow-md transform scale-105;
-  transition: all 0.25s ease;
-}
-
-/* Today tile */
-.react-calendar__tile--now {
-  @apply border border-indigo-400 rounded-xl;
-}
-
-/* Dot for dreams */
-.react-calendar__tile.has-dream::after {
-  content: '';
-  @apply absolute bottom-2 left-1/2 w-2 h-2 bg-slate-500 rounded-full transform -translate-x-1/2;
-}
-
-/* Hover effect for tiles */
-.react-calendar__tile:hover {
-  @apply shadow-lg;
-}
-
-.react-calendar abbr[title] {
-  -webkit-text-decoration: none;
-  text-decoration: none;
-}
-
-
-/* Weekdays header */
-.react-calendar__month-view__weekdays {
-  @apply text-sm font-semibold text-gray-600 dark:text-gray-300;
+@font-face {
+  font-family: "logo";
+  src: url("/Fonts/house-minimalist.otf") format("opentype");
+  font-style: italic;
+  font-display: swap;
 }
