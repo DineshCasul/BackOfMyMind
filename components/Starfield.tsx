@@ -67,27 +67,27 @@ export default function Starfield() {
   const farRef = useRef<SVGGElement>(null);
 
   useEffect(() => {
-    let ticking = false;
+    let frameId: number;
+    let lastY = -1;
 
-    function apply() {
+    // Polls scroll position every frame rather than reacting to the
+    // `scroll` event, so it keeps working regardless of which element ends
+    // up as the actual scrolling box (window vs. an inner container), and
+    // regardless of whether that element reliably bubbles scroll events.
+    function loop() {
       const y = window.scrollY;
-      const nearShift = Math.min(y * 0.06, NEAR_MAX_SHIFT);
-      const farShift = Math.min(y * 0.02, FAR_MAX_SHIFT);
-      if (nearRef.current) nearRef.current.style.transform = `translate3d(0, ${nearShift}px, 0)`;
-      if (farRef.current) farRef.current.style.transform = `translate3d(0, ${farShift}px, 0)`;
-      ticking = false;
-    }
-
-    function onScroll() {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(apply);
+      if (y !== lastY) {
+        lastY = y;
+        const nearShift = Math.min(y * 0.06, NEAR_MAX_SHIFT);
+        const farShift = Math.min(y * 0.02, FAR_MAX_SHIFT);
+        if (nearRef.current) nearRef.current.style.transform = `translate3d(0, ${nearShift}px, 0)`;
+        if (farRef.current) farRef.current.style.transform = `translate3d(0, ${farShift}px, 0)`;
       }
+      frameId = requestAnimationFrame(loop);
     }
 
-    apply();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    frameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frameId);
   }, []);
 
   return (

@@ -70,6 +70,12 @@ create policy "Users can update their own profile"
   on profiles for update
   using (auth.uid() = id);
 
+-- Lets the client self-heal a missing profile row (accounts created before
+-- this trigger existed) via upsert, instead of only ever reading "Someone".
+create policy "Users can insert their own profile"
+  on profiles for insert
+  with check (auth.uid() = id);
+
 -- Two separate SELECT policies (own dreams, public dreams). Postgres
 -- combines multiple permissive policies for the same command with OR, so
 -- a user sees their own dreams AND everyone's public ones.

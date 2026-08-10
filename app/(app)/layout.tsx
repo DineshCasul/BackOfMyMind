@@ -15,5 +15,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (!user) redirect("/login");
 
-  return <DreamProvider userId={user.id}>{children}</DreamProvider>;
+  return (
+    <DreamProvider userId={user.id} userEmail={user.email ?? ""}>
+      {children}
+    </DreamProvider>
+  );
 }

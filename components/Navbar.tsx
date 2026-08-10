@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { Moon, LogOut, Menu, X } from "lucide-react";
+import { Moon, LogOut, Menu, X, User } from "lucide-react";
 import { logout } from "@/app/login/actions";
+import { useDreams } from "@/context/DreamContext";
+import EditProfileDialog from "./EditProfileDialog";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -16,7 +18,9 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { displayName, updateDisplayName } = useDreams();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -77,6 +81,15 @@ export default function Navbar() {
               </Link>
             );
           })}
+          <button
+            onClick={() => setIsEditProfileOpen(true)}
+            aria-label="Edit profile"
+            title={displayName || "Edit profile"}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-105 cursor-pointer max-w-[10rem]"
+          >
+            <User className="size-4 shrink-0" strokeWidth={1.75} />
+            <span className="truncate">{displayName}</span>
+          </button>
           <form action={logout}>
             <button
               type="submit"
@@ -126,7 +139,17 @@ export default function Navbar() {
               </Link>
             );
           })}
-          <div className="border-t border-border pt-4">
+          <div className="border-t border-border pt-4 flex flex-col gap-4">
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsEditProfileOpen(true);
+              }}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <User className="size-4" strokeWidth={1.75} />
+              {displayName || "Edit profile"}
+            </button>
             <form action={logout}>
               <button
                 type="submit"
@@ -139,6 +162,13 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      <EditProfileDialog
+        open={isEditProfileOpen}
+        onOpenChange={setIsEditProfileOpen}
+        currentName={displayName}
+        onSave={updateDisplayName}
+      />
     </nav>
   );
 }
