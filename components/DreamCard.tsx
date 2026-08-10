@@ -5,6 +5,15 @@ import { Trash2, Share2, Star, Globe, Lock } from "lucide-react";
 import { toPng } from "html-to-image";
 import FormModal from "./FormModal";
 import DreamShareCard from "./DreamShareCard";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import type { Dream, DreamInput } from "@/context/DreamContext";
 import { MOOD_META } from "@/lib/moods";
 import { DREAM_TYPE_META } from "@/lib/dreamTypes";
@@ -35,6 +44,8 @@ export default function DreamCard({
   className,
 }: DreamCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
@@ -65,6 +76,18 @@ export default function DreamCard({
       alert(err instanceof Error ? err.message : "Failed to update.");
     } finally {
       setIsToggling(false);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    setIsDeleting(true);
+    try {
+      await onDelete(id);
+      setIsConfirmingDelete(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete.");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -171,13 +194,9 @@ export default function DreamCard({
               <Share2 className="size-4" strokeWidth={1.75} />
             </button>
             <button
-              onClick={async (e) => {
+              onClick={(e) => {
                 e.stopPropagation(); // prevent opening edit modal
-                try {
-                  await onDelete(id);
-                } catch (err) {
-                  alert(err instanceof Error ? err.message : "Failed to delete.");
-                }
+                setIsConfirmingDelete(true);
               }}
               aria-label={`Delete "${title}"`}
               className="text-muted-foreground hover:text-destructive transition-colors p-1 -m-1 rounded cursor-pointer"
@@ -207,6 +226,26 @@ export default function DreamCard({
         initialVividness={vividness}
         onAddDream={(values) => onEdit(id, values)}
       />
+
+      {/* Delete confirmation */}
+      <Dialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
+        <DialogContent onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>Delete this dream?</DialogTitle>
+            <DialogDescription>
+              &ldquo;{title}&rdquo; will be permanently deleted. This can&apos;t be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsConfirmingDelete(false)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+              {isDeleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

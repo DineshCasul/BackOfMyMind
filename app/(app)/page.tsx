@@ -1,6 +1,7 @@
 import { Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { fromRow, type DreamRow } from "@/lib/dreams";
+import { getLikeInfo } from "@/lib/likes";
 import Layout from "@/components/Layout";
 import Greeting from "@/components/Greeting";
 import PublicDreamCard from "@/components/PublicDreamCard";
@@ -31,10 +32,18 @@ export default async function WelcomePage() {
     : { data: [] as { id: string; display_name: string | null }[] };
 
   const nameById = new Map((authorRows ?? []).map((p) => [p.id, p.display_name ?? "Someone"]));
+  const likeInfoByDream = await getLikeInfo(
+    supabase,
+    rows.map((r) => r.id),
+    user.id
+  );
 
   const dreams = rows.map((row) => ({
     ...fromRow(row),
     authorName: nameById.get(row.user_id) ?? "Someone",
+    viewerId: user.id,
+    likeCount: likeInfoByDream.get(row.id)?.count ?? 0,
+    likedByMe: likeInfoByDream.get(row.id)?.likedByMe ?? false,
   }));
 
   return (
