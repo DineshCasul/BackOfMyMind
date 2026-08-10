@@ -15,7 +15,7 @@ function hasSeenIntro(): boolean {
   try {
     return sessionStorage.getItem(INTRO_SEEN_KEY) === "true";
   } catch {
-    // Storage can throw in some privacy modes — fail open (play the intro)
+    // Storage can throw in some privacy modes, fail open (play the intro)
     // rather than crash the page over a decorative animation.
     return false;
   }
@@ -25,24 +25,24 @@ function markIntroSeen(): void {
   try {
     sessionStorage.setItem(INTRO_SEEN_KEY, "true");
   } catch {
-    // Ignore — worst case the intro replays next time, not a real problem.
+    // Ignore, worst case the intro replays next time, not a real problem.
   }
 }
 
 function greetingFor(hour: number): { text: string; icon: LucideIcon } {
   if (hour < 5) return { text: "Still up? Sweet dreams whenever you get there", icon: Moon };
-  if (hour < 12) return { text: "Good morning — hope you had a nice sleep", icon: Sunrise };
+  if (hour < 12) return { text: "Good morning, hope you had a nice sleep", icon: Sunrise };
   if (hour < 17) return { text: "Good afternoon", icon: Sun };
   if (hour < 21) return { text: "Good evening", icon: Sunset };
-  return { text: "Good night — sweet dreams ahead", icon: Moon };
+  return { text: "Good night, sweet dreams ahead", icon: Moon };
 }
 
 type Phase = "idle" | "iconIn" | "textIn" | "hold" | "fadeOut" | "done";
 
-// Plays once per browser session (sessionStorage — clears when the tab
+// Plays once per browser session (sessionStorage, clears when the tab
 // closes): a slow, centered, full-screen reveal of the greeting before
 // settling into its normal spot at the top of the page. Depends on the
-// visitor's local clock, which the server can't know — nothing renders
+// visitor's local clock, which the server can't know, nothing renders
 // until after mount, same pattern as everywhere else timezone-sensitive
 // in this app, so there's no hydration mismatch.
 export default function Greeting({ name }: Props) {

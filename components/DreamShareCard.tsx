@@ -9,7 +9,7 @@ type Props = {
 };
 
 // Rendered off-screen (see DreamCard's handleShare) and captured via
-// html-to-image — not meant to ever be visible in normal page layout, so
+// html-to-image, not meant to ever be visible in normal page layout, so
 // it deliberately doesn't share styling with the on-page DreamCard beyond
 // the same design tokens.
 const DreamShareCard = forwardRef<HTMLDivElement, Props>(function DreamShareCard({ dream }, ref) {

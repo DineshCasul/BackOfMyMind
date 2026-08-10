@@ -1,6 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 
-// Browser-side Supabase client — for client components (auth forms, the
+// Browser-side Supabase client, for client components (auth forms, the
 // dream context's CRUD calls). Session lives in cookies, kept fresh by
 // middleware.ts.
 export function createClient() {

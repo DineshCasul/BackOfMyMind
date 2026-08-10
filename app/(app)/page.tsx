@@ -57,7 +57,7 @@ export default async function WelcomePage() {
 
       {dreams.length === 0 ? (
         <p className="text-muted-foreground text-center py-16 animate-in fade-in duration-500">
-          No dreams shared yet — be the first from your journal.
+          No dreams shared yet. Be the first from your journal.
         </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

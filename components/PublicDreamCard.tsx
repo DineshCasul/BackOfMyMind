@@ -13,7 +13,7 @@ type Props = Dream & {
   likedByMe: boolean;
 };
 
-// Read-only — no click-to-edit, no delete, no share-to-feed toggle, since
+// Read-only, no click-to-edit, no delete, no share-to-feed toggle, since
 // these belong to someone else. Visually related to DreamCard (same mood
 // spine + icon language) but deliberately not interactive the same way.
 // Clicking through to /dream/[id] is the one interaction, plus liking.

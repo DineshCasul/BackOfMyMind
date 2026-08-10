@@ -36,7 +36,7 @@ export async function signup(_prevState: AuthState, formData: FormData): Promise
     options: {
       data: { display_name: displayName || undefined },
       // Without this, Supabase falls back to the Site URL configured in
-      // the dashboard (Authentication > URL Configuration) — which is
+      // the dashboard (Authentication > URL Configuration), which is
       // whatever it happened to default to, not necessarily this app.
       // Must also be added to that project's Redirect URLs allowlist, or
       // Supabase silently ignores this and falls back anyway.
@@ -47,7 +47,7 @@ export async function signup(_prevState: AuthState, formData: FormData): Promise
   if (error) return { error: error.message };
 
   // With email confirmation enabled (the Supabase default), signUp doesn't
-  // return a session — nothing to redirect into yet.
+  // return a session, nothing to redirect into yet.
   if (!data.session) {
     return { error: null, message: "Check your email to confirm your account, then log in." };
   }

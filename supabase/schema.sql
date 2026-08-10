@@ -1,12 +1,12 @@
--- Dreamscape ("back of my mind") — Phase 1 schema.
+-- Dreamscape ("back of my mind"), Phase 1 schema.
 -- Run this once in your Supabase project's SQL editor.
 -- Covers: profiles, dreams (private-by-default), dream_likes (login-gated,
 -- one per user per dream, only on public dreams). Phase 1 only needs
 -- profiles + dreams; dream_likes and the is_public-based public-read
 -- policy are here now so the schema doesn't need a second migration once
--- Phase 3 (public feed) lands — RLS just won't be exercised for that path yet.
+-- Phase 3 (public feed) lands, RLS just won't be exercised for that path yet.
 
--- ── profiles ────────────────────────────────────────────────────────────
+-- profiles
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text,
@@ -28,7 +28,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- ── dreams ──────────────────────────────────────────────────────────────
+-- dreams
 create table if not exists dreams (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -48,7 +48,7 @@ create table if not exists dreams (
 create index if not exists dreams_user_id_idx on dreams (user_id);
 create index if not exists dreams_public_idx on dreams (is_public) where is_public = true;
 
--- ── dream_likes ─────────────────────────────────────────────────────────
+-- dream_likes
 create table if not exists dream_likes (
   id uuid primary key default gen_random_uuid(),
   dream_id uuid not null references dreams(id) on delete cascade,
@@ -57,7 +57,7 @@ create table if not exists dream_likes (
   unique (dream_id, user_id)
 );
 
--- ── RLS ─────────────────────────────────────────────────────────────────
+-- RLS
 alter table profiles enable row level security;
 alter table dreams enable row level security;
 alter table dream_likes enable row level security;
@@ -70,7 +70,7 @@ create policy "Users can update their own profile"
   on profiles for update
   using (auth.uid() = id);
 
--- Two separate SELECT policies (own dreams, public dreams) — Postgres
+-- Two separate SELECT policies (own dreams, public dreams). Postgres
 -- combines multiple permissive policies for the same command with OR, so
 -- a user sees their own dreams AND everyone's public ones.
 create policy "Users can view their own dreams"

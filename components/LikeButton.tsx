@@ -14,7 +14,7 @@ type Props = {
 };
 
 // Every viewer of a public dream is already logged in (the whole app is
-// auth-gated), so there's no "sign in to like" case to handle here — the
+// auth-gated), so there's no "sign in to like" case to handle here, the
 // dream_likes RLS policy is what actually enforces one like per user per
 // dream; this just reflects that optimistically and reverts on failure.
 export default function LikeButton({ dreamId, userId, initialCount, initialLiked, size = "sm" }: Props) {

@@ -22,7 +22,7 @@ export default function CalendarPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   // selectedDate's initial value comes from `new Date()`, which can differ
   // between the server render and client hydration (different instant,
-  // possibly different timezone) — gating on mount avoids rendering
+  // possibly different timezone), gating on mount avoids rendering
   // anything date-dependent until the client's real value has settled.
   const [mounted, setMounted] = useState(false);
 

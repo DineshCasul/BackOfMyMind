@@ -45,7 +45,7 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Starry Night — a single committed dark theme, not a light/dark toggle.
+/* Starry Night, a single committed dark theme, not a light/dark toggle.
    Hue ~265-280 throughout (indigo/periwinkle family) for a cohesive
    night-sky feel instead of a generic gray/blue shadcn default. */
 :root {
@@ -60,7 +60,7 @@
   --popover: oklch(0.205 0.035 267);
   --popover-foreground: oklch(0.95 0.012 265);
 
-  /* Soft moonlight lavender — the one accent color, used for links,
+  /* Soft moonlight lavender, the one accent color, used for links,
      primary actions, focus rings, "today" markers. */
   --primary: oklch(0.78 0.1 280);
   --primary-foreground: oklch(0.18 0.03 267);
@@ -86,7 +86,7 @@
   --chart-4: oklch(0.75 0.13 200);
   --chart-5: oklch(0.7 0.16 340);
 
-  /* Mood accents — a separate small palette from the primary lavender,
+  /* Mood accents, a separate small palette from the primary lavender,
      each with its own "night sky" story: starlight gold, moonlight
      silver-lavender, deep night-sky indigo. */
   --mood-happy: oklch(0.8 0.15 85);
@@ -113,13 +113,13 @@
 }
 
 /* Each star is a tiny individually-animated SVG <circle> (see
-   components/Starfield.tsx) — deliberately not a CSS background-image, even
+   components/Starfield.tsx), deliberately not a CSS background-image, even
    a transform-animated one. A handful of small elements each only ever
    compositing their own opacity is cheap regardless of hardware; a single
    huge tiled multi-gradient layer covering (viewport + margin)² is a lot of
    surface for the GPU to rasterize even when the animation itself is
    composited, and that's what was still causing the stutter. No drift
-   either now — it wasn't buying much visually for what it cost. */
+   either now, it wasn't buying much visually for what it cost. */
 @keyframes star-twinkle {
   from {
     opacity: 0.6;
@@ -129,7 +129,7 @@
   }
 }
 
-/* A slow, gentle scale+opacity pulse — used by the session-intro icon once
+/* A slow, gentle scale+opacity pulse, used by the session-intro icon once
    it's fully faded in, so it reads as "breathing" rather than static. */
 @keyframes breathe {
   0%,
@@ -146,7 +146,7 @@
   animation: breathe 3.5s ease-in-out infinite;
 }
 
-/* Respect reduced-motion — every animation/transition on the site
+/* Respect reduced-motion, every animation/transition on the site
    collapses to effectively instant instead of being removed outright. */
 @media (prefers-reduced-motion: reduce) {
   *,

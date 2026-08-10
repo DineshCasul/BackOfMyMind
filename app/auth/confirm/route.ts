@@ -3,8 +3,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 // Where email confirmation/magic-link/recovery links land. Handles both
-// current Supabase link formats — token_hash+type (the default "Confirm
-// signup" template) and code (PKCE) — since which one arrives depends on
+// current Supabase link formats, token_hash+type (the default "Confirm
+// signup" template) and code (PKCE), since which one arrives depends on
 // project settings this app doesn't control. Deliberately doesn't handle
 // the legacy #access_token hash-fragment format: fragments never reach the
 // server at all, so that variant would need a client-side page instead.

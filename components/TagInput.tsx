@@ -20,7 +20,7 @@ function distinctSorted(values: string[]): string[] {
 }
 
 // Toggleable chips sourced from values already used elsewhere (so typo
-// variants don't multiply), plus free-text add for anything new — used for
+// variants don't multiply), plus free-text add for anything new, used for
 // both tags and people in the dream form.
 export default function TagInput({ label, value, onChange, knownOptions = [], placeholder = "Add…" }: Props) {
   const [draft, setDraft] = useState("");

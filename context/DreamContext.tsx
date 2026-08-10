@@ -23,7 +23,7 @@ export type Dream = {
 };
 
 // Everything addDream/updateDream need, minus what the caller doesn't
-// control (id) — kept as one object rather than a growing positional
+// control (id), kept as one object rather than a growing positional
 // argument list now that there are this many fields.
 export type DreamInput = {
   title: string;

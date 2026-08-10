@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type LikeInfo = { count: number; likedByMe: boolean };
 
 // One query for however many dream IDs are on screen, rather than one
-// per-card round trip — used by both the feed and the dream detail page.
+// per-card round trip, used by both the feed and the dream detail page.
 export async function getLikeInfo(
   supabase: SupabaseClient,
   dreamIds: string[],

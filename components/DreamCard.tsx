@@ -107,7 +107,7 @@ export default function DreamCard({
           return;
         }
       } catch {
-        // Share cancelled or unsupported — fall through to a direct download.
+        // Share cancelled or unsupported, fall through to a direct download.
       }
 
       const link = document.createElement("a");
@@ -173,7 +173,7 @@ export default function DreamCard({
               disabled={isToggling}
               aria-label={isPublic ? `Make "${title}" private` : `Share "${title}" to the public feed`}
               aria-pressed={isPublic}
-              title={isPublic ? "On the public feed" : "Private — share to feed"}
+              title={isPublic ? "On the public feed" : "Private, share to feed"}
               className={cn(
                 "transition-colors p-1 -m-1 rounded cursor-pointer disabled:opacity-50",
                 isPublic ? "text-primary hover:text-muted-foreground" : "text-muted-foreground hover:text-primary"
@@ -207,7 +207,7 @@ export default function DreamCard({
         </div>
       </div>
 
-      {/* Off-screen, captured as an image by handleShare — never visible in normal layout. */}
+      {/* Off-screen, captured as an image by handleShare, never visible in normal layout. */}
       <div style={{ position: "fixed", top: -9999, left: -9999, pointerEvents: "none" }} aria-hidden="true">
         <DreamShareCard ref={shareCardRef} dream={dream} />
       </div>

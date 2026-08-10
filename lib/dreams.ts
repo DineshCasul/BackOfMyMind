@@ -1,6 +1,6 @@
 import type { Dream, MoodType, DreamType } from "@/context/DreamContext";
 
-// Postgres/PostgREST returns column names verbatim (snake_case) — the app's
+// Postgres/PostgREST returns column names verbatim (snake_case), the app's
 // own types are camelCase, so every row needs converting on the way in.
 // Shared by DreamContext (the logged-in user's own dreams) and the public
 // feed page (everyone's public dreams), so the two can't drift apart.

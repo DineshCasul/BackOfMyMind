@@ -82,7 +82,7 @@ export default function FormModal({
       setVividness(initialVividness);
       setError(null);
     }
-    // initialTags/initialPeople are arrays — re-created each render by the
+    // initialTags/initialPeople are arrays, re-created each render by the
     // caller, so they're deliberately left out of the deps to avoid
     // resetting the form on every keystroke; isOpen toggling is what
     // actually matters here.
@@ -98,7 +98,7 @@ export default function FormModal({
       if (isControlled) onOpenChange?.(false);
       else setInternalOpen(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong — try again.");
+      setError(e instanceof Error ? e.message : "Something went wrong. Try again.");
     } finally {
       setIsSubmitting(false);
     }

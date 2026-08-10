@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// "YYYY-MM-DD" from a Date's *local* calendar day — not toISOString(), which
+// "YYYY-MM-DD" from a Date's *local* calendar day, not toISOString(), which
 // converts to UTC first and can shift the date by a day in either direction
 // depending on the user's timezone offset.
 export function toLocalDateString(date: Date): string {
@@ -15,7 +15,7 @@ export function toLocalDateString(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-// Inverse of toLocalDateString — `new Date("YYYY-MM-DD")` parses as UTC
+// Inverse of toLocalDateString, `new Date("YYYY-MM-DD")` parses as UTC
 // midnight, which is the wrong calendar day in any timezone ahead of UTC.
 // Constructing from the numeric parts instead always gives local midnight.
 export function parseLocalDateString(value: string): Date {

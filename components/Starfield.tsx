@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-// A handful of small, individually-twinkling stars — plain SVG circles, not
+// A handful of small, individually-twinkling stars, plain SVG circles, not
 // a CSS background-image, so there's nothing expensive to rasterize (see
 // globals.css for why the earlier tiled-gradient approach stuttered).
 // Split into two depth layers: bigger circles ("near") drift a bit more on
@@ -29,7 +29,7 @@ const FAR_STARS = [
   { x: 46, y: 92, r: 0.8, duration: 6.6, delay: 0.4 },
 ] as const;
 
-// Max px each layer will ever shift, however far the page scrolls — capped
+// Max px each layer will ever shift, however far the page scrolls, capped
 // rather than unbounded, so it reads as a gentle settle rather than stars
 // drifting off into nowhere on a long page.
 const NEAR_MAX_SHIFT = 60;

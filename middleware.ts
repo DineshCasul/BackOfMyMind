@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Keeps the Supabase auth session cookie fresh on every request — without
+// Keeps the Supabase auth session cookie fresh on every request, without
 // this, access tokens expire and Server Components silently see a logged-out
 // user even though the browser still thinks it's signed in.
 export async function middleware(request: NextRequest) {
@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAuthPage = pathname === "/login" || pathname === "/signup";
-  // Confirmation/magic-link/recovery links land here with no session yet —
+  // Confirmation/magic-link/recovery links land here with no session yet,
   // that's the whole point, so it can't require one to be reachable.
   const isAuthCallback = pathname === "/auth/confirm";
 

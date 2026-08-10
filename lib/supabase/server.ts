@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-// Server-side Supabase client — for Server Components/Actions that need
+// Server-side Supabase client, for Server Components/Actions that need
 // the current user's session. Cookie writes here are best-effort (a Server
 // Component render can't set response cookies); middleware.ts is what
 // actually keeps the session refreshed across requests.
@@ -23,7 +23,7 @@ export async function createClient() {
             );
           } catch {
             // Called from a Server Component render, which can't set
-            // cookies — fine as long as middleware is refreshing sessions.
+            // cookies, fine as long as middleware is refreshing sessions.
           }
         },
       },

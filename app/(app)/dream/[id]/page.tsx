@@ -22,7 +22,7 @@ export default async function DreamPage({ params }: Props) {
   if (!user) return null; // the (app) layout already redirects unauthenticated visitors
 
   // RLS already limits this to dreams that are either public or the
-  // viewer's own — a private dream owned by someone else simply won't come
+  // viewer's own, a private dream owned by someone else simply won't come
   // back as a row here, which is exactly the "not found" case below wants.
   const { data: row } = await supabase.from("dreams").select("*").eq("id", id).single();
   if (!row) notFound();
@@ -123,7 +123,7 @@ export default async function DreamPage({ params }: Props) {
                 size="md"
               />
             ) : (
-              <span className="text-xs text-muted-foreground">Private — not shared to the feed</span>
+              <span className="text-xs text-muted-foreground">Private, not shared to the feed</span>
             )}
           </div>
         </div>
