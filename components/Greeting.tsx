@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   name?: string | null;
+  extra?: React.ReactNode;
 };
 
 const INTRO_SEEN_KEY = "backofmymind_intro_seen";
@@ -29,12 +30,68 @@ function markIntroSeen(): void {
   }
 }
 
+// A pool per time-of-day instead of one fixed line, so the greeting
+// doesn't say the exact same thing on every single visit.
+const LATE_NIGHT_PHRASES = [
+  "Still up? Sweet dreams whenever you get there",
+  "The night is quiet, let your mind wander",
+  "Burning the midnight oil? Rest is calling",
+  "The stars are still out, and so are you",
+  "Whenever you're ready, the dreamworld's waiting",
+  "Late night thoughts make for the best dreams",
+  "The world's asleep, but you're still here",
+];
+
+const MORNING_PHRASES = [
+  "Good morning, hope you had a nice sleep",
+  "Rise and shine, what did you dream last night?",
+  "A new day, fresh from the dreamworld",
+  "Morning has broken, did your dreams linger?",
+  "Good morning, the world's just waking up with you",
+  "Hope your dreams were kind to you last night",
+  "Morning light, and whatever dreams came with it",
+];
+
+const AFTERNOON_PHRASES = [
+  "Good afternoon",
+  "Hope your day's treating you well",
+  "Midday check-in, how's it going?",
+  "The sun's high, how's your day unfolding?",
+  "Good afternoon, halfway through the day already",
+  "Taking a moment in the middle of the day",
+  "Good afternoon, hope it's been a good one so far",
+];
+
+const EVENING_PHRASES = [
+  "Good evening",
+  "The day's winding down, how was it?",
+  "Evening's here, time to slow down a little",
+  "Good evening, the sky's putting on a show",
+  "As the sun sets, what's on your mind?",
+  "Good evening, the quiet hours are near",
+  "Evening settles in, day's almost done",
+];
+
+const NIGHT_PHRASES = [
+  "Good night, sweet dreams ahead",
+  "Time to drift off, may your dreams be vivid",
+  "The stars are out, ready when you are",
+  "Sleep tight, see you in the dreamworld",
+  "Good night, let your mind wander freely tonight",
+  "Sweet dreams, whatever they may hold",
+  "Good night, the sky's clear for dreaming",
+];
+
+function pick(phrases: string[]): string {
+  return phrases[Math.floor(Math.random() * phrases.length)];
+}
+
 function greetingFor(hour: number): { text: string; icon: LucideIcon } {
-  if (hour < 5) return { text: "Still up? Sweet dreams whenever you get there", icon: Moon };
-  if (hour < 12) return { text: "Good morning, hope you had a nice sleep", icon: Sunrise };
-  if (hour < 17) return { text: "Good afternoon", icon: Sun };
-  if (hour < 21) return { text: "Good evening", icon: Sunset };
-  return { text: "Good night, sweet dreams ahead", icon: Moon };
+  if (hour < 5) return { text: pick(LATE_NIGHT_PHRASES), icon: Moon };
+  if (hour < 12) return { text: pick(MORNING_PHRASES), icon: Sunrise };
+  if (hour < 17) return { text: pick(AFTERNOON_PHRASES), icon: Sun };
+  if (hour < 21) return { text: pick(EVENING_PHRASES), icon: Sunset };
+  return { text: pick(NIGHT_PHRASES), icon: Moon };
 }
 
 type Phase = "idle" | "iconIn" | "textIn" | "hold" | "fadeOut" | "done";
@@ -45,7 +102,7 @@ type Phase = "idle" | "iconIn" | "textIn" | "hold" | "fadeOut" | "done";
 // visitor's local clock, which the server can't know, nothing renders
 // until after mount, same pattern as everywhere else timezone-sensitive
 // in this app, so there's no hydration mismatch.
-export default function Greeting({ name }: Props) {
+export default function Greeting({ name, extra }: Props) {
   const [greeting, setGreeting] = useState<{ text: string; icon: LucideIcon } | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [showOverlay, setShowOverlay] = useState(true);
@@ -111,12 +168,13 @@ export default function Greeting({ name }: Props) {
         </div>
       )}
 
-      <div className="flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-700 fill-mode-both">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 animate-in fade-in slide-in-from-bottom-2 duration-700 fill-mode-both">
         <Icon className="size-7 sm:size-8 text-primary shrink-0" strokeWidth={1.5} />
         <h1 className="text-2xl sm:text-3xl font-serif">
           {text}
           {name ? `, ${name}` : ""}.
         </h1>
+        <div className="ml-auto">{extra}</div>
       </div>
     </>
   );

@@ -6,7 +6,6 @@ import { fromRow, type DreamRow } from "@/lib/dreams";
 import { getLikeInfo } from "@/lib/likes";
 import { MOOD_META } from "@/lib/moods";
 import { DREAM_TYPE_META } from "@/lib/dreamTypes";
-import Layout from "@/components/Layout";
 import LikeButton from "@/components/LikeButton";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +40,7 @@ export default async function DreamPage({ params }: Props) {
   const { icon: TypeIcon, label: typeLabel } = DREAM_TYPE_META[dream.dreamType];
 
   return (
-    <Layout>
+    <>
       <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
         <Link
           href="/"
@@ -128,6 +127,6 @@ export default async function DreamPage({ params }: Props) {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 }

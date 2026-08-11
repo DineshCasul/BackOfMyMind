@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Trash2, Share2, Star, Globe, Lock } from "lucide-react";
+import { Trash2, Share2, Star, Globe, Lock, ArrowUpRight } from "lucide-react";
 import { toPng } from "html-to-image";
 import FormModal from "./FormModal";
 import DreamShareCard from "./DreamShareCard";
@@ -23,6 +23,7 @@ interface DreamCardProps extends Dream {
   onEdit: (id: string, values: Omit<DreamInput, "date">) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onTogglePublic: (id: string, isPublic: boolean) => Promise<void>;
+  onToggleFavorite: (id: string, isFavorite: boolean) => Promise<void>;
   className?: string;
 }
 
@@ -38,9 +39,11 @@ export default function DreamCard({
   setting,
   vividness,
   isPublic,
+  isFavorite,
   onEdit,
   onDelete,
   onTogglePublic,
+  onToggleFavorite,
   className,
 }: DreamCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -48,6 +51,7 @@ export default function DreamCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [isFavoriting, setIsFavoriting] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
   const { icon: MoodIcon, label: moodLabel, colorClass } = MOOD_META[mood];
   const { icon: TypeIcon, label: typeLabel } = DREAM_TYPE_META[dreamType];
@@ -64,6 +68,7 @@ export default function DreamCard({
     setting,
     vividness,
     isPublic,
+    isFavorite,
   };
 
   async function handleTogglePublic(e: React.MouseEvent) {
@@ -76,6 +81,19 @@ export default function DreamCard({
       alert(err instanceof Error ? err.message : "Failed to update.");
     } finally {
       setIsToggling(false);
+    }
+  }
+
+  async function handleToggleFavorite(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (isFavoriting) return;
+    setIsFavoriting(true);
+    try {
+      await onToggleFavorite(id, !isFavorite);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update.");
+    } finally {
+      setIsFavoriting(false);
     }
   }
 
@@ -123,9 +141,15 @@ export default function DreamCard({
     <>
       <div
         onClick={() => setIsEditModalOpen(true)}
-        style={{ borderLeftColor: `var(--mood-${mood})`, borderLeftWidth: 3 }}
+        style={
+          {
+            borderLeftColor: `var(--mood-${mood})`,
+            borderLeftWidth: 3,
+            "--card-glow": `var(--mood-${mood})`,
+          } as React.CSSProperties & Record<string, string | number>
+        }
         className={cn(
-          "cursor-pointer flex flex-col justify-between gap-3 p-4 rounded-lg border border-border bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20",
+          "group cursor-pointer flex flex-col justify-between gap-3 p-4 rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_var(--card-glow)]",
           className
         )}
       >
@@ -135,9 +159,15 @@ export default function DreamCard({
               <MoodIcon className="size-3.5" strokeWidth={2} />
               <span className="uppercase tracking-wide">{moodLabel}</span>
             </div>
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <TypeIcon className="size-3" strokeWidth={1.75} />
-              {typeLabel}
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <TypeIcon className="size-3" strokeWidth={1.75} />
+                {typeLabel}
+              </div>
+              <ArrowUpRight
+                className="size-3.5 text-muted-foreground opacity-0 -translate-x-1 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0"
+                strokeWidth={2}
+              />
             </div>
           </div>
           <h4 className="font-semibold text-lg mb-1 text-card-foreground">{title}</h4>
@@ -168,6 +198,19 @@ export default function DreamCard({
             ))}
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={handleToggleFavorite}
+              disabled={isFavoriting}
+              aria-label={isFavorite ? `Remove "${title}" from favorites` : `Mark "${title}" as a favorite`}
+              aria-pressed={isFavorite}
+              title={isFavorite ? "Favorite" : "Mark as favorite"}
+              className={cn(
+                "transition-colors p-1 -m-1 rounded cursor-pointer disabled:opacity-50",
+                isFavorite ? "text-primary" : "text-muted-foreground hover:text-primary"
+              )}
+            >
+              <Star className="size-4" fill={isFavorite ? "currentColor" : "none"} strokeWidth={1.75} />
+            </button>
             <button
               onClick={handleTogglePublic}
               disabled={isToggling}

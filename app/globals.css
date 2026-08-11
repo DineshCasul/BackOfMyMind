@@ -4,7 +4,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-quicksand);
   --font-serif: var(--font-fraunces);
   --font-logo: "logo", var(--font-fraunces), serif;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -37,8 +37,12 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-mood-happy: var(--mood-happy);
+  --color-mood-excited: var(--mood-excited);
+  --color-mood-peaceful: var(--mood-peaceful);
   --color-mood-neutral: var(--mood-neutral);
+  --color-mood-annoyed: var(--mood-annoyed);
   --color-mood-sad: var(--mood-sad);
+  --color-mood-angry: var(--mood-angry);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -90,8 +94,12 @@
      each with its own "night sky" story: starlight gold, moonlight
      silver-lavender, deep night-sky indigo. */
   --mood-happy: oklch(0.8 0.15 85);
+  --mood-excited: oklch(0.78 0.17 55);
+  --mood-peaceful: oklch(0.82 0.07 190);
   --mood-neutral: oklch(0.78 0.05 280);
+  --mood-annoyed: oklch(0.72 0.15 330);
   --mood-sad: oklch(0.58 0.13 260);
+  --mood-angry: oklch(0.55 0.19 25);
 
   --sidebar: oklch(0.18 0.03 265);
   --sidebar-foreground: oklch(0.95 0.012 265);
@@ -127,6 +135,85 @@
   to {
     opacity: 1;
   }
+}
+
+/* This is a CSS scroll-driven animation, the keyframe's progress is
+   tied straight to scroll offset by the browser itself, off the main
+   thread, zero JS per frame. This replaced a requestAnimationFrame loop
+   that wrote style.transform on every scroll tick, that version worked
+   fine in isolation but stuttered on real pages once it had to compete
+   with everything else happening on the main thread (backdrop-blur navbar,
+   card hover transitions, etc). animation-range in px mimics the old
+   loop's `Math.min(scrollY * rate, cap)` easing, progress maps to an
+   absolute scroll distance rather than a % of the whole page.
+   Falls back to nothing (static, not broken) pre-Firefox/Safari support,
+   components/Starfield.tsx only runs the old rAF loop when
+   CSS.supports("animation-timeline", "scroll()") says this isn't available.
+   Refer: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_scroll-driven_animations */
+@supports (animation-timeline: scroll()) {
+  .star-layer-near {
+    animation-name: star-parallax-near;
+    animation-timing-function: linear;
+    /* The `animation` shorthand defaults duration to 0s, not auto, silently
+       breaking the scroll-driven case, has to be set longhand instead. */
+    animation-duration: auto;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root);
+    animation-range: 0 1000px;
+  }
+  .star-layer-far {
+    animation-name: star-parallax-far;
+    animation-timing-function: linear;
+    animation-duration: auto;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root);
+    animation-range: 0 1200px;
+  }
+}
+
+@keyframes star-parallax-near {
+  to {
+    transform: translate3d(0, 60px, 0);
+  }
+}
+
+@keyframes star-parallax-far {
+  to {
+    transform: translate3d(0, 24px, 0);
+  }
+}
+
+/* Two large blurred blobs drifting via `transform` only
+   (translate + scale), never animating background-position or color
+   directly, that's what keeps a big soft glow like this cheap, transform
+   is compositor-only, the blur itself is a one-time rasterize rather than
+   something recomputed every frame. Same reasoning as the star parallax
+   above and the tiled-gradient regret documented near star-twinkle.
+   Refer: https://web.dev/articles/animations-guide (see "high performance
+   properties") */
+@keyframes aurora-drift-a {
+  0%,
+  100% {
+    transform: translate(-35%, -25%) scale(1);
+  }
+  50% {
+    transform: translate(35%, 25%) scale(1.3);
+  }
+}
+@keyframes aurora-drift-b {
+  0%,
+  100% {
+    transform: translate(30%, 15%) scale(1.2);
+  }
+  50% {
+    transform: translate(-35%, -20%) scale(1);
+  }
+}
+.animate-aurora-a {
+  animation: aurora-drift-a 16s ease-in-out infinite;
+}
+.animate-aurora-b {
+  animation: aurora-drift-b 19s ease-in-out infinite;
 }
 
 /* A slow, gentle scale+opacity pulse, used by the session-intro icon once

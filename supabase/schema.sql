@@ -34,7 +34,7 @@ create table if not exists dreams (
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null,
   description text not null,
-  mood text not null check (mood in ('happy', 'neutral', 'sad')),
+  mood text not null check (mood in ('happy', 'excited', 'peaceful', 'neutral', 'annoyed', 'sad', 'angry')),
   dream_type text not null check (dream_type in ('normal', 'lucid', 'nightmare', 'recurring')),
   tags text[] not null default '{}',
   people text[] not null default '{}',
@@ -42,6 +42,7 @@ create table if not exists dreams (
   vividness int not null default 3 check (vividness between 1 and 5),
   date date not null,
   is_public boolean not null default false,
+  is_favorite boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -116,3 +117,40 @@ create policy "Logged in users can like public dreams"
 create policy "Users can remove their own like"
   on dream_likes for delete
   using (auth.uid() = user_id);
+
+-- `create table if not exists` above only affects a table
+-- that doesn't exist yet, it's a no-op against your already-created live
+-- table, so widening the mood set needs its own migration: find whatever
+-- Postgres auto-named the original inline check constraint (rather than
+-- guessing "dreams_mood_check" and risking ending up with two constraints
+-- ANDed together, the old one still rejecting the new values) via
+-- pg_constraint + pg_get_constraintdef, drop it, add the new one.
+-- Refer: https://www.postgresql.org/docs/current/catalog-pg-constraint.html
+do $$
+declare
+  cons record;
+begin
+  for cons in
+    select conname from pg_constraint
+    where conrelid = 'dreams'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) like '%mood%'
+  loop
+    execute format('alter table dreams drop constraint %I', cons.conname);
+  end loop;
+end $$;
+
+alter table dreams add constraint dreams_mood_check
+  check (mood in ('happy', 'excited', 'peaceful', 'neutral', 'annoyed', 'sad', 'angry'));
+
+-- Additive column, safe to run against the live table as-is (no existing
+-- rows to reconcile the way the mood check constraint needed above). The
+-- existing "Users can update their own dreams" policy already covers it,
+-- RLS is per-row, not per-column.
+alter table dreams add column if not exists is_favorite boolean not null default false;
+
+-- Realtime's postgres_changes doesn't stream every table by
+-- default, only ones added to this publication. RLS policies above still
+-- gate who receives what; this just turns the tap on for the table.
+-- Refer: https://supabase.com/docs/guides/realtime/postgres-changes#adding-tables-to-your-publication
+alter publication supabase_realtime add table dreams;

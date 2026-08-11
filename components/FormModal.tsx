@@ -61,6 +61,7 @@ export default function FormModal({
   const [vividness, setVividness] = useState(initialVividness);
   const [internalOpen, setInternalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ title?: string; description?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isControlled = open !== undefined && onOpenChange !== undefined;
@@ -81,6 +82,7 @@ export default function FormModal({
       setSetting(initialSetting);
       setVividness(initialVividness);
       setError(null);
+      setFieldErrors({});
     }
     // initialTags/initialPeople are arrays, re-created each render by the
     // caller, so they're deliberately left out of the deps to avoid
@@ -90,11 +92,16 @@ export default function FormModal({
   }, [isOpen, initialTitle, initialDescription, initialMood, initialDreamType, initialSetting, initialVividness]);
 
   const handleSubmit = async () => {
-    if (!title || !description) return;
+    const nextFieldErrors: typeof fieldErrors = {};
+    if (!title.trim()) nextFieldErrors.title = "Give your dream a title.";
+    if (!description.trim()) nextFieldErrors.description = "Describe what happened.";
+    setFieldErrors(nextFieldErrors);
+    if (Object.keys(nextFieldErrors).length > 0) return;
+
     setIsSubmitting(true);
     setError(null);
     try {
-      await onAddDream({ title, description, mood, tags, dreamType, people, setting, vividness });
+      await onAddDream({ title: title.trim(), description: description.trim(), mood, tags, dreamType, people, setting, vividness });
       if (isControlled) onOpenChange?.(false);
       else setInternalOpen(false);
     } catch (e) {
@@ -113,20 +120,43 @@ export default function FormModal({
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
-          <Input
-            placeholder="Dream Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <Textarea
-            placeholder="Describe your dream..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+          <div>
+            <label className="block text-sm font-medium mb-1.5" htmlFor="dreamTitle">
+              Title <span className="text-destructive">*</span>
+            </label>
+            <Input
+              id="dreamTitle"
+              placeholder="Dream Title"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (fieldErrors.title) setFieldErrors((prev) => ({ ...prev, title: undefined }));
+              }}
+              aria-invalid={!!fieldErrors.title}
+            />
+            {fieldErrors.title && <p className="text-destructive text-xs mt-1">{fieldErrors.title}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1.5" htmlFor="dreamDescription">
+              Description <span className="text-destructive">*</span>
+            </label>
+            <Textarea
+              id="dreamDescription"
+              placeholder="Describe your dream..."
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                if (fieldErrors.description) setFieldErrors((prev) => ({ ...prev, description: undefined }));
+              }}
+              aria-invalid={!!fieldErrors.description}
+            />
+            {fieldErrors.description && <p className="text-destructive text-xs mt-1">{fieldErrors.description}</p>}
+          </div>
 
           <div>
             <label className="block text-sm font-medium mb-1.5">Mood</label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {MOOD_ORDER.map((option) => {
                 const { icon: Icon, label, colorClass } = MOOD_META[option];
                 const selected = mood === option;
@@ -137,13 +167,13 @@ export default function FormModal({
                     onClick={() => setMood(option)}
                     aria-pressed={selected}
                     className={cn(
-                      "flex-1 flex flex-col items-center gap-1 py-2.5 rounded-md border transition-all duration-200 hover:scale-105 cursor-pointer",
-                      selected ? "border-current bg-accent scale-105" : "border-border hover:bg-accent/50",
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-all duration-200 hover:scale-105 cursor-pointer",
+                      selected ? "border-current bg-accent" : "border-border hover:bg-accent/50",
                       selected ? colorClass : "text-muted-foreground"
                     )}
                   >
-                    <Icon className="size-5" strokeWidth={1.75} />
-                    <span className="text-xs font-medium">{label}</span>
+                    <Icon className="size-3.5" strokeWidth={1.75} />
+                    {label}
                   </button>
                 );
               })}

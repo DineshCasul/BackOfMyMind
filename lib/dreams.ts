@@ -16,6 +16,7 @@ export type DreamRow = {
   setting: string | null;
   vividness: number;
   is_public: boolean;
+  is_favorite: boolean;
   user_id: string;
 };
 
@@ -32,5 +33,6 @@ export function fromRow(row: DreamRow): Dream {
     setting: row.setting ?? "",
     vividness: row.vividness,
     isPublic: row.is_public,
+    isFavorite: row.is_favorite,
   };
 }

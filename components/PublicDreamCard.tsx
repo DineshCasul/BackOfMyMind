@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star } from "lucide-react";
+import { Star, ArrowUpRight } from "lucide-react";
 import type { Dream } from "@/context/DreamContext";
 import { MOOD_META } from "@/lib/moods";
 import { DREAM_TYPE_META } from "@/lib/dreamTypes";
@@ -37,8 +37,14 @@ export default function PublicDreamCard({
   return (
     <Link
       href={`/dream/${id}`}
-      style={{ borderLeftColor: `var(--mood-${mood})`, borderLeftWidth: 3 }}
-      className="flex flex-col gap-3 p-4 rounded-lg border border-border bg-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20"
+      style={
+        {
+          borderLeftColor: `var(--mood-${mood})`,
+          borderLeftWidth: 3,
+          "--card-glow": `var(--mood-${mood})`,
+        } as React.CSSProperties & Record<string, string | number>
+      }
+      className="group flex flex-col gap-3 p-4 rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_var(--card-glow)]"
     >
       <div>
         <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -46,9 +52,15 @@ export default function PublicDreamCard({
             <MoodIcon className="size-3.5" strokeWidth={2} />
             <span className="uppercase tracking-wide">{moodLabel}</span>
           </div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <TypeIcon className="size-3" strokeWidth={1.75} />
-            {typeLabel}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <TypeIcon className="size-3" strokeWidth={1.75} />
+              {typeLabel}
+            </div>
+            <ArrowUpRight
+              className="size-3.5 text-muted-foreground opacity-0 -translate-x-1 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0"
+              strokeWidth={2}
+            />
           </div>
         </div>
         <h4 className="font-semibold text-lg mb-1 text-card-foreground">{title}</h4>

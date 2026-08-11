@@ -1,0 +1,140 @@
+"use client";
+
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { toLocalDateString, parseLocalDateString, startOfWeek, cn } from "@/lib/utils";
+
+const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+export default function WeekDatePicker({
+  selectedDate,
+  onSelectDate,
+  markedDates,
+}: {
+  selectedDate: string;
+  onSelectDate: (date: string) => void;
+  markedDates?: Set<string>;
+}) {
+  // The displayed week is independent of the selection, paging with the
+  // arrows shouldn't change which date is selected until a pill is clicked.
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(parseLocalDateString(selectedDate)));
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  function shiftWeek(weeks: number) {
+    setWeekStart((prev) => {
+      const next = new Date(prev);
+      next.setDate(next.getDate() + weeks * 7);
+      return next;
+    });
+  }
+
+  function handleMonthJump(date: Date | undefined) {
+    if (!date) return;
+    setWeekStart(startOfWeek(date));
+    onSelectDate(toLocalDateString(date));
+    setMonthPickerOpen(false);
+  }
+
+  return (
+    // Centered on mobile, where this sits full-width on its own line below
+    // search; left-aligned on desktop, where it shares a row with search
+    // and grows to fill the space to its right instead.
+    <div className="flex items-center justify-center sm:justify-start gap-1 flex-1 min-w-0">
+      <button
+        type="button"
+        onClick={() => shiftWeek(-1)}
+        aria-label="Previous week"
+        className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer shrink-0"
+      >
+        <ChevronLeft className="size-4" strokeWidth={1.75} />
+      </button>
+
+      {/* min-w-0 lets this flex item actually shrink below its content
+          width, without it overflow-x-auto never kicks in, a flex item
+          defaults to min-width: auto, so the row would just push the whole
+          picker wider than the viewport on narrow screens instead of
+          scrolling internally. */}
+      <div className="flex gap-1.5 overflow-x-auto min-w-0">
+        {days.map((d) => {
+          const value = toLocalDateString(d);
+          const isSelected = value === selectedDate;
+          const hasDream = markedDates?.has(value);
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onSelectDate(value)}
+              aria-pressed={isSelected}
+              className="flex flex-col items-center gap-1 shrink-0 cursor-pointer"
+            >
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground">
+                {DAY_LABELS[(d.getDay() + 6) % 7]}
+              </span>
+              <span
+                className={cn(
+                  "flex items-center justify-center size-8 sm:size-9 rounded-full border text-sm font-semibold transition-all duration-200 hover:scale-105",
+                  isSelected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border text-muted-foreground hover:bg-accent"
+                )}
+              >
+                {d.getDate()}
+              </span>
+              <span
+                className={cn("size-1 rounded-full", hasDream ? (isSelected ? "bg-primary" : "bg-primary/70") : "bg-transparent")}
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => shiftWeek(1)}
+        aria-label="Next week"
+        className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer shrink-0"
+      >
+        <ChevronRight className="size-4" strokeWidth={1.75} />
+      </button>
+
+      {/* Hidden below sm: on a phone-width row the pill strip already
+          covers "nearby dates" and a third control just adds clutter,
+          the month-jump is a desktop-space convenience. */}
+      <Popover open={monthPickerOpen} onOpenChange={setMonthPickerOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label="Jump to a date"
+            title="Jump to a date"
+            className="hidden sm:inline-flex items-center justify-center p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer shrink-0"
+          >
+            <CalendarDays className="size-4" strokeWidth={1.75} />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={parseLocalDateString(selectedDate)}
+            captionLayout="dropdown"
+            onSelect={handleMonthJump}
+            modifiers={{
+              hasDream: (date) => markedDates?.has(toLocalDateString(date)) ?? false,
+            }}
+            modifiersClassNames={{
+              hasDream:
+                "relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:size-1 after:rounded-full after:bg-primary",
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}

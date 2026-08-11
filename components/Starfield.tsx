@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // A handful of small, individually-twinkling stars, plain SVG circles, not
 // a CSS background-image, so there's nothing expensive to rasterize (see
@@ -38,12 +38,14 @@ const FAR_MAX_SHIFT = 24;
 function Layer({
   stars,
   layerRef,
+  className,
 }: {
   stars: readonly { x: number; y: number; r: number; duration: number; delay: number }[];
   layerRef: React.RefObject<SVGGElement | null>;
+  className?: string;
 }) {
   return (
-    <g ref={layerRef}>
+    <g ref={layerRef} className={className}>
       {stars.map((star, i) => (
         <circle
           key={i}
@@ -65,15 +67,24 @@ function Layer({
 export default function Starfield() {
   const nearRef = useRef<SVGGElement>(null);
   const farRef = useRef<SVGGElement>(null);
+  // Assume the CSS path until proven otherwise, matches what actually
+  // renders server-side and on first paint in the (large majority of)
+  // browsers that support it, so there's no flash of the JS-driven mode.
+  const [cssDriven, setCssDriven] = useState(true);
 
   useEffect(() => {
-    let frameId: number;
-    let lastY = -1;
+    const supportsScrollTimeline =
+      typeof CSS !== "undefined" && typeof CSS.supports === "function" && CSS.supports("animation-timeline", "scroll()");
+    setCssDriven(supportsScrollTimeline);
+    if (supportsScrollTimeline) return; // globals.css's .star-layer-* handles it, no JS needed
 
+    // Fallback for browsers without scroll-driven animation support yet.
     // Polls scroll position every frame rather than reacting to the
     // `scroll` event, so it keeps working regardless of which element ends
     // up as the actual scrolling box (window vs. an inner container), and
     // regardless of whether that element reliably bubbles scroll events.
+    let frameId: number;
+    let lastY = -1;
     function loop() {
       const y = window.scrollY;
       if (y !== lastY) {
@@ -92,8 +103,8 @@ export default function Starfield() {
 
   return (
     <svg className="fixed inset-0 -z-10 w-full h-full" pointerEvents="none" aria-hidden="true">
-      <Layer stars={FAR_STARS} layerRef={farRef} />
-      <Layer stars={NEAR_STARS} layerRef={nearRef} />
+      <Layer stars={FAR_STARS} layerRef={farRef} className={cssDriven ? "star-layer-far" : undefined} />
+      <Layer stars={NEAR_STARS} layerRef={nearRef} className={cssDriven ? "star-layer-near" : undefined} />
     </svg>
   );
 }

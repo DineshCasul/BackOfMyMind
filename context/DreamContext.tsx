@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { fromRow } from "@/lib/dreams";
 import { toLocalDateString } from "@/lib/utils";
 
-export type MoodType = "happy" | "neutral" | "sad";
+export type MoodType = "happy" | "excited" | "peaceful" | "neutral" | "annoyed" | "sad" | "angry";
 export type DreamType = "normal" | "lucid" | "nightmare" | "recurring";
 
 export type Dream = {
@@ -21,6 +21,7 @@ export type Dream = {
   setting: string;
   vividness: number; // 1-5
   isPublic: boolean;
+  isFavorite: boolean;
 };
 
 // Everything addDream/updateDream need, minus what the caller doesn't
@@ -45,6 +46,7 @@ export type DreamContextType = {
   updateDream: (id: string, input: Omit<DreamInput, "date">) => Promise<void>;
   deleteDream: (id: string) => Promise<void>;
   togglePublic: (id: string, isPublic: boolean) => Promise<void>;
+  toggleFavorite: (id: string, isFavorite: boolean) => Promise<void>;
   selectedDate: string;
   setSelectedDate: (date: string) => void;
   displayName: string;
@@ -170,6 +172,13 @@ export function DreamProvider({
     router.refresh();
   };
 
+  const toggleFavorite = async (id: string, isFavorite: boolean) => {
+    const { error } = await supabase.from("dreams").update({ is_favorite: isFavorite }).eq("id", id);
+    if (error) throw new Error(error.message);
+    setDreams((prev) => prev.map((d) => (d.id === id ? { ...d, isFavorite } : d)));
+    router.refresh();
+  };
+
   return (
     <DreamContext.Provider
       value={{
@@ -179,6 +188,7 @@ export function DreamProvider({
         updateDream,
         deleteDream,
         togglePublic,
+        toggleFavorite,
         selectedDate,
         setSelectedDate,
         displayName,

@@ -22,3 +22,14 @@ export function parseLocalDateString(value: string): Date {
   const [year, month, day] = value.split("-").map(Number);
   return new Date(year, month - 1, day);
 }
+
+// Monday-start week containing `date`, at local midnight. Shared by
+// WeekDatePicker and DreamHeatmap so "which day starts a week" can't drift
+// between the two.
+export function startOfWeek(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 (Sun) .. 6 (Sat)
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
