@@ -79,8 +79,9 @@ export default function JournalPage() {
       </div>
 
       {/* Mood filter row, now on its own since Add Dream moved up next to
-          the title. */}
-      <div className="flex gap-2 flex-wrap mb-3 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75 fill-mode-both">
+          the title. Centered on desktop; left-aligned (natural wrap) on
+          mobile where centering would ping-pong each chip row. */}
+      <div className="flex gap-2 flex-wrap mb-3 sm:justify-center animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75 fill-mode-both">
         <button
           type="button"
           onClick={() => setFilterMood("all")}
@@ -135,9 +136,10 @@ export default function JournalPage() {
         )}
       </div>
 
-      {/* Desktop: search left, date picker right, same row. Mobile: stacks,
-          search goes full width, dates get their own line below. */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-both">
+      {/* Desktop: search and date picker centered together as one row.
+          Mobile: stacks, search goes full width, dates get their own line
+          below. */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-3 mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-both">
         <Input
           type="text"
           placeholder="Search…"
