@@ -154,3 +154,61 @@ alter table dreams add column if not exists is_favorite boolean not null default
 -- gate who receives what; this just turns the tap on for the table.
 -- Refer: https://supabase.com/docs/guides/realtime/postgres-changes#adding-tables-to-your-publication
 alter publication supabase_realtime add table dreams;
+
+-- dream_achievements: persists which achievement badges a user has
+-- unlocked (catalog lives in lib/achievements.ts, client-side). Unlocking
+-- itself is recomputed from the dreams already loaded into DreamContext
+-- each time the profile page mounts; this table just remembers *when*
+-- each one first unlocked so that date doesn't need recomputing forever
+-- and survives across devices.
+create table if not exists dream_achievements (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  achievement_id text not null,
+  unlocked_at timestamptz not null default now(),
+  unique (user_id, achievement_id)
+);
+
+alter table dream_achievements enable row level security;
+
+create policy "Users can view their own achievements"
+  on dream_achievements for select
+  using (auth.uid() = user_id);
+
+-- No update policy: an unlocked_at date never changes once set. A delete
+-- policy does exist below, but only for the manual "resync to current
+-- dreams" utility (see AchievementsPanel) used while testing, never called
+-- as part of the app's normal unlock flow, which stays append-only.
+create policy "Users can unlock their own achievements"
+  on dream_achievements for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can remove their own achievements"
+  on dream_achievements for delete
+  using (auth.uid() = user_id);
+
+-- The original insert policy only checked that the target dream was
+-- public, not that it belonged to someone else, so a user could like
+-- their own dream. Drop + recreate (like the mood constraint migration
+-- above) rather than ALTER POLICY, to keep the "how to change an existing
+-- policy" pattern in this file consistent.
+drop policy if exists "Logged in users can like public dreams" on dream_likes;
+
+create policy "Logged in users can like public dreams"
+  on dream_likes for insert
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from dreams
+      where dreams.id = dream_id
+        and dreams.is_public = true
+        and dreams.user_id <> auth.uid()
+    )
+  );
+
+-- Cleanup for any self-likes recorded before the policy above closed the
+-- gap. No-op if none exist.
+delete from dream_likes
+using dreams
+where dream_likes.dream_id = dreams.id
+  and dream_likes.user_id = dreams.user_id;

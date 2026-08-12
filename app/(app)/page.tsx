@@ -25,7 +25,10 @@ export default async function WelcomePage() {
 
   return (
     <>
-      <Greeting name={profile?.display_name} extra={<PresenceBadge viewerId={user.id} />} />
+      <div className="flex justify-end mb-2 animate-in fade-in duration-500 fill-mode-both">
+        <PresenceBadge viewerId={user.id} />
+      </div>
+      <Greeting name={profile?.display_name} />
       <LiveFeed
         initialDreams={dreams}
         initialFavoriteDreams={favoriteDreams}

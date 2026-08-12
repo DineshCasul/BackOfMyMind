@@ -8,6 +8,7 @@ import LikeButton from "./LikeButton";
 
 type Props = Dream & {
   authorName: string;
+  authorId: string;
   viewerId: string;
   likeCount: number;
   likedByMe: boolean;
@@ -27,6 +28,7 @@ export default function PublicDreamCard({
   dreamType,
   vividness,
   authorName,
+  authorId,
   viewerId,
   likeCount,
   likedByMe,
@@ -44,8 +46,16 @@ export default function PublicDreamCard({
           "--card-glow": `var(--mood-${mood})`,
         } as React.CSSProperties & Record<string, string | number>
       }
-      className="group flex flex-col gap-3 p-4 rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_var(--card-glow)]"
+      className="group relative flex flex-col gap-3 p-4 rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_var(--card-glow)]"
     >
+      {/* Nested overflow-hidden wrapper rather than putting it on the root:
+          the root also carries the hover box-shadow above, and clipping
+          overflow on the same element that paints a shadow risks clipping
+          the shadow too in some browsers. */}
+      <div aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+        <div className="absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/[0.07] to-transparent -skew-x-12 transition-transform duration-700 ease-out group-hover:translate-x-[400%]" />
+      </div>
+
       <div>
         <div className="flex items-center justify-between gap-2 mb-1.5">
           <div className={cn("flex items-center gap-1.5 text-xs font-medium", colorClass)}>
@@ -90,7 +100,13 @@ export default function PublicDreamCard({
             />
           ))}
         </div>
-        <LikeButton dreamId={id} userId={viewerId} initialCount={likeCount} initialLiked={likedByMe} />
+        <LikeButton
+          dreamId={id}
+          userId={viewerId}
+          ownerId={authorId}
+          initialCount={likeCount}
+          initialLiked={likedByMe}
+        />
       </div>
 
       <div className="text-[11px] text-muted-foreground -mt-1">

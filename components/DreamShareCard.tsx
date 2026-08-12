@@ -8,6 +8,20 @@ type Props = {
   dream: Dream;
 };
 
+// Dreams are free-text with no length limit, and this card's height is
+// otherwise unbounded (see the description below) to fit the whole thing.
+// Without some ceiling, an extreme outlier could produce a card tall
+// enough that toPng's canvas (already tripled by pixelRatio: 3 in
+// DreamCard's handleShare) hits browser canvas size limits and silently
+// fails. ~1400 characters is still far more than the old 6-line clamp
+// allowed, just not literally unbounded.
+const MAX_SHARE_DESCRIPTION = 1400;
+
+function forShareCard(description: string): string {
+  if (description.length <= MAX_SHARE_DESCRIPTION) return description;
+  return description.slice(0, MAX_SHARE_DESCRIPTION).trimEnd() + "…";
+}
+
 // Rendered off-screen (see DreamCard's handleShare) and captured via
 // html-to-image, not meant to ever be visible in normal page layout, so
 // it deliberately doesn't share styling with the on-page DreamCard beyond
@@ -19,7 +33,7 @@ const DreamShareCard = forwardRef<HTMLDivElement, Props>(function DreamShareCard
   return (
     <div
       ref={ref}
-      className="w-[360px] h-[450px] flex flex-col justify-between p-7 bg-background text-foreground font-sans relative overflow-hidden rounded-[20px]"
+      className="w-[420px] min-h-[450px] flex flex-col justify-between p-7 bg-background text-foreground font-sans relative overflow-hidden rounded-[20px]"
     >
       <div
         className="absolute inset-0"
@@ -51,8 +65,12 @@ const DreamShareCard = forwardRef<HTMLDivElement, Props>(function DreamShareCard
 
         <h3 className="text-2xl font-serif leading-tight">{dream.title}</h3>
 
-        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-6">
-          {dream.description}
+        {/* No line-clamp: the card's height is auto (min-h only, see the
+            root div), so it just grows to fit the whole description
+            instead of cutting it off at a fixed number of lines. Still
+            capped in length, see forShareCard above. */}
+        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+          {forShareCard(dream.description)}
         </p>
 
         {dream.tags.length > 0 && (

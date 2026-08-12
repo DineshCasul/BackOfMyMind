@@ -7,6 +7,7 @@ import { getLikeInfo } from "@/lib/likes";
 import { MOOD_META } from "@/lib/moods";
 import { DREAM_TYPE_META } from "@/lib/dreamTypes";
 import LikeButton from "@/components/LikeButton";
+import ScrollToTop from "@/components/ScrollToTop";
 import { cn } from "@/lib/utils";
 
 type Props = { params: Promise<{ id: string }> };
@@ -41,6 +42,7 @@ export default async function DreamPage({ params }: Props) {
 
   return (
     <>
+      <ScrollToTop />
       <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
         <Link
           href="/"
@@ -117,6 +119,7 @@ export default async function DreamPage({ params }: Props) {
               <LikeButton
                 dreamId={dream.id}
                 userId={user.id}
+                ownerId={row.user_id}
                 initialCount={likeCount}
                 initialLiked={likedByMe}
                 size="md"

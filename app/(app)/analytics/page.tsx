@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useDreams } from "@/context/DreamContext";
+import { useAchievements } from "@/context/AchievementContext";
+import { ACHIEVEMENTS } from "@/lib/achievements";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingState from "@/components/LoadingState";
 import CountUp from "@/components/CountUp";
@@ -9,23 +12,30 @@ import DreamHeatmap from "@/components/DreamHeatmap";
 import { MOOD_ORDER } from "@/lib/moods";
 import { computeStreaks } from "@/lib/streaks";
 import { useMemo } from "react";
-import { BarChart3, MoonStar, Flame, Trophy, Star, Eye } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart3, MoonStar, Flame, Trophy, Star, Eye, Award, Tag, Users, ArrowUpRight } from "lucide-react";
+import type { Dream } from "@/context/DreamContext";
+
+// Shared by the top-tags and top-people lists below: same "count how often
+// each string appears, case-insensitively, but keep the first casing seen
+// for display" logic either way.
+function topEntries(dreams: Dream[], pick: (d: Dream) => string[], limit = 8): { label: string; count: number }[] {
+  const byKey = new Map<string, { label: string; count: number }>();
+  dreams.forEach((d) =>
+    pick(d).forEach((raw) => {
+      const trimmed = raw.trim();
+      if (!trimmed) return;
+      const key = trimmed.toLowerCase();
+      const existing = byKey.get(key);
+      if (existing) existing.count++;
+      else byKey.set(key, { label: trimmed, count: 1 });
+    })
+  );
+  return [...byKey.values()].sort((a, b) => b.count - a.count).slice(0, limit);
+}
 
 export default function AnalyticsPage() {
   const { dreams, loading } = useDreams();
-
-  const dreamsPerDate = useMemo(() => {
-    const counts: Record<string, number> = {};
-    dreams.forEach((dream) => {
-      counts[dream.date] = (counts[dream.date] || 0) + 1;
-    });
-
-    // Transform into array for recharts
-    return Object.entries(counts)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, count]) => ({ date, count }));
-  }, [dreams]);
+  const { unlockedIds, loading: achievementsLoading } = useAchievements();
 
   const moodCounts = useMemo(() => {
     const counts: Record<string, number> = Object.fromEntries(MOOD_ORDER.map((m) => [m, 0]));
@@ -40,6 +50,9 @@ export default function AnalyticsPage() {
   const avgVividness = dreams.length ? dreams.reduce((sum, d) => sum + d.vividness, 0) / dreams.length : 0;
   const lucidPct = dreams.length ? Math.round((dreams.filter((d) => d.dreamType === "lucid").length / dreams.length) * 100) : 0;
 
+  const topTags = useMemo(() => topEntries(dreams, (d) => d.tags), [dreams]);
+  const topPeople = useMemo(() => topEntries(dreams, (d) => d.people), [dreams]);
+
   const stats = [
     { icon: MoonStar, label: "Total Dreams", value: dreams.length, decimals: 0, suffix: "" },
     { icon: Flame, label: "Current Streak", value: streaks.current, decimals: 0, suffix: streaks.current === 1 ? " day" : " days" },
@@ -52,7 +65,7 @@ export default function AnalyticsPage() {
     <>
       <div className="flex items-center gap-2.5 mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
         <BarChart3 className="size-6 text-primary" strokeWidth={1.5} />
-        <h2 className="text-2xl font-serif">Analytics</h2>
+        <h2 className="text-2xl font-serif">Patterns</h2>
       </div>
 
       {loading ? (
@@ -82,7 +95,37 @@ export default function AnalyticsPage() {
             ))}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2 mb-6">
+          {!achievementsLoading && (
+            <Link
+              href="/profile"
+              className="group flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-5 py-3.5 mb-6 transition-all duration-200 hover:border-primary/40 hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75 fill-mode-both"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Award className="size-5 shrink-0 text-primary" strokeWidth={1.5} />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">
+                    {unlockedIds.size}/{ACHIEVEMENTS.length} badges unlocked
+                  </p>
+                  <div className="w-40 max-w-full h-1.5 rounded-full bg-muted overflow-hidden mt-1.5">
+                    <div
+                      className="h-full bg-primary transition-all duration-500"
+                      style={{ width: `${(unlockedIds.size / ACHIEVEMENTS.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <ArrowUpRight
+                className="size-4 shrink-0 text-muted-foreground transition-all duration-200 group-hover:text-primary group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                strokeWidth={2}
+              />
+            </Link>
+          )}
+
+          {/* items-start: without it, grid stretches both cards to match
+              whichever is taller, which is how a short Mood Balance (few
+              moods logged) ends up with a card visibly taller than its
+              own content, looking half-empty. */}
+          <div className="grid gap-4 lg:grid-cols-2 mb-6 items-start">
             <Card className="transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-both">
               <CardHeader>
                 <CardTitle className="text-base font-serif">Mood Balance</CardTitle>
@@ -106,45 +149,55 @@ export default function AnalyticsPage() {
             </Card>
           </div>
 
-          <Card className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300 fill-mode-both">
+          <Card className="transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-both">
             <CardHeader>
-              <CardTitle className="text-base font-serif">Dreams Over Time</CardTitle>
+              <CardTitle className="text-base font-serif">Recurring Motifs</CardTitle>
             </CardHeader>
             <CardContent>
-              {dreamsPerDate.length === 0 ? (
-                <p className="text-muted-foreground text-center py-12">No dreams yet to show a graph.</p>
+              {topTags.length === 0 && topPeople.length === 0 ? (
+                <p className="text-muted-foreground text-center py-12">No tags or people logged yet.</p>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={dreamsPerDate} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
-                    <defs>
-                      <linearGradient id="dreamsAreaFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.45} />
-                        <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="date" stroke="var(--muted-foreground)" fontSize={12} />
-                    <YAxis allowDecimals={false} stroke="var(--muted-foreground)" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "var(--popover)",
-                        borderColor: "var(--border)",
-                        borderRadius: "var(--radius-md)",
-                        color: "var(--popover-foreground)",
-                      }}
-                      cursor={{ stroke: "var(--color-primary)", strokeWidth: 1 }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="count"
-                      stroke="var(--color-primary)"
-                      strokeWidth={2}
-                      fill="url(#dreamsAreaFill)"
-                      animationDuration={900}
-                      animationEasing="ease-out"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground mb-3">
+                      <Tag className="size-3.5" strokeWidth={1.75} />
+                      Tags
+                    </div>
+                    {topTags.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">No tags yet.</p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {topTags.map((entry) => (
+                          <div key={entry.label} className="flex items-center gap-2 text-sm">
+                            <span className="text-muted-foreground truncate">{entry.label}</span>
+                            <span className="flex-1 border-b border-dashed border-border mx-1 translate-y-[-2px]" />
+                            <span className="font-medium shrink-0">&times;{entry.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground mb-3">
+                      <Users className="size-3.5" strokeWidth={1.75} />
+                      People
+                    </div>
+                    {topPeople.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">No people logged yet.</p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {topPeople.map((entry) => (
+                          <div key={entry.label} className="flex items-center gap-2 text-sm">
+                            <span className="text-muted-foreground truncate">{entry.label}</span>
+                            <span className="flex-1 border-b border-dashed border-border mx-1 translate-y-[-2px]" />
+                            <span className="font-medium shrink-0">&times;{entry.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>

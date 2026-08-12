@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Trash2, Share2, Star, Globe, Lock, ArrowUpRight } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Trash2, Share2, Star, Globe, Lock, ArrowUpRight, Flame, Check } from "lucide-react";
 import { toPng } from "html-to-image";
 import FormModal from "./FormModal";
 import DreamShareCard from "./DreamShareCard";
@@ -17,6 +17,7 @@ import {
 import type { Dream, DreamInput } from "@/context/DreamContext";
 import { MOOD_META } from "@/lib/moods";
 import { DREAM_TYPE_META } from "@/lib/dreamTypes";
+import { computeStreaks } from "@/lib/streaks";
 import { cn } from "@/lib/utils";
 
 interface DreamCardProps extends Dream {
@@ -24,6 +25,10 @@ interface DreamCardProps extends Dream {
   onDelete: (id: string) => Promise<void>;
   onTogglePublic: (id: string, isPublic: boolean) => Promise<void>;
   onToggleFavorite: (id: string, isFavorite: boolean) => Promise<void>;
+  // Every one of the user's dreams, not just this day's, so the delete
+  // confirmation can simulate "what would the streak be without this
+  // dream" rather than only knowing about the day it's on.
+  allDreams: Dream[];
   className?: string;
 }
 
@@ -44,17 +49,32 @@ export default function DreamCard({
   onDelete,
   onTogglePublic,
   onToggleFavorite,
+  allDreams,
   className,
 }: DreamCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [justCopiedLink, setJustCopiedLink] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [isFavoriting, setIsFavoriting] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
   const { icon: MoodIcon, label: moodLabel, colorClass } = MOOD_META[mood];
   const { icon: TypeIcon, label: typeLabel } = DREAM_TYPE_META[dreamType];
+
+  // Only worth computing while the dialog asking about it is actually
+  // open. Naturally comes out "no impact" unless this is the only dream
+  // logged on `date`, removing it is what drops that date out of the
+  // streak's set of unique days, no separate "last dream of the day"
+  // check needed, this simulation already implies it.
+  const streakImpact = useMemo(() => {
+    if (!isConfirmingDelete) return null;
+    const before = computeStreaks(allDreams.map((d) => d.date));
+    const after = computeStreaks(allDreams.filter((d) => d.id !== id).map((d) => d.date));
+    if (after.current >= before.current && after.longest >= before.longest) return null;
+    return { before, after };
+  }, [isConfirmingDelete, allDreams, id]);
 
   const dream: Dream = {
     id,
@@ -114,24 +134,57 @@ export default function DreamCard({
     if (!shareCardRef.current || isSharing) return;
     setIsSharing(true);
     try {
-      const dataUrl = await toPng(shareCardRef.current, { pixelRatio: 3 });
+      // html-to-image's canvas defaults to a plain white fill wherever the
+      // node itself doesn't paint anything, the rounded corners clipped by
+      // the card's own border-radius included, so without an explicit
+      // backgroundColor those corners come out white instead of matching
+      // the card. Reading it off the actual node keeps this correct
+      // automatically if the theme ever changes.
+      const backgroundColor = getComputedStyle(shareCardRef.current).backgroundColor;
+      const dataUrl = await toPng(shareCardRef.current, { pixelRatio: 3, backgroundColor });
       const filename = `${title || "dream"}.png`;
+      // Only worth sharing a link for dreams anyone else could actually
+      // open, RLS blocks non-owners from a private dream's page.
+      const dreamUrl = isPublic ? `${window.location.origin}/dream/${id}` : null;
 
       try {
         const blob = await (await fetch(dataUrl)).blob();
         const file = new File([blob], filename, { type: "image/png" });
         if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], title });
-          return;
+          try {
+            await navigator.share({
+              files: [file],
+              title,
+              ...(dreamUrl ? { url: dreamUrl, text: `"${title}" — read the full dream` } : {}),
+            });
+            return;
+          } catch (shareErr) {
+            // The user cancelling the OS share sheet also throws (AbortError),
+            // that's a deliberate "never mind", not a failure to fall back
+            // from, forcing a download + clipboard copy right after would
+            // silently do the exact thing they just declined.
+            if (shareErr instanceof Error && shareErr.name === "AbortError") return;
+          }
         }
       } catch {
-        // Share cancelled or unsupported, fall through to a direct download.
+        // Building the file to share failed, fall through to a direct download.
       }
 
       const link = document.createElement("a");
       link.download = filename;
       link.href = dataUrl;
       link.click();
+
+      if (dreamUrl) {
+        try {
+          await navigator.clipboard.writeText(dreamUrl);
+          setJustCopiedLink(true);
+          setTimeout(() => setJustCopiedLink(false), 1800);
+        } catch {
+          // Clipboard access can be blocked (permissions, insecure context),
+          // the image download above already happened either way.
+        }
+      }
     } finally {
       setIsSharing(false);
     }
@@ -232,9 +285,14 @@ export default function DreamCard({
               onClick={handleShare}
               disabled={isSharing}
               aria-label={`Share "${title}"`}
+              title={justCopiedLink ? "Link copied!" : undefined}
               className="text-muted-foreground hover:text-primary transition-colors p-1 -m-1 rounded cursor-pointer disabled:opacity-50"
             >
-              <Share2 className="size-4" strokeWidth={1.75} />
+              {justCopiedLink ? (
+                <Check className="size-4 text-primary" strokeWidth={1.75} />
+              ) : (
+                <Share2 className="size-4" strokeWidth={1.75} />
+              )}
             </button>
             <button
               onClick={(e) => {
@@ -279,6 +337,24 @@ export default function DreamCard({
               &ldquo;{title}&rdquo; will be permanently deleted. This can&apos;t be undone.
             </DialogDescription>
           </DialogHeader>
+
+          {streakImpact && (
+            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <Flame className="size-4 shrink-0 mt-0.5" strokeWidth={1.75} />
+              <span>
+                This is your only dream logged on {date}.{" "}
+                {[
+                  streakImpact.after.current < streakImpact.before.current &&
+                    `Your current streak will drop from ${streakImpact.before.current} to ${streakImpact.after.current} day${streakImpact.after.current === 1 ? "" : "s"}.`,
+                  streakImpact.after.longest < streakImpact.before.longest &&
+                    `Your longest streak will drop from ${streakImpact.before.longest} to ${streakImpact.after.longest} day${streakImpact.after.longest === 1 ? "" : "s"}.`,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              </span>
+            </div>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsConfirmingDelete(false)} disabled={isDeleting}>
               Cancel

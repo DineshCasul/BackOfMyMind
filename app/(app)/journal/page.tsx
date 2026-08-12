@@ -171,6 +171,7 @@ export default function JournalPage() {
                 onDelete={deleteDream}
                 onTogglePublic={togglePublic}
                 onToggleFavorite={toggleFavorite}
+                allDreams={dreams}
               />
             </div>
           ))}

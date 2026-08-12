@@ -18,8 +18,8 @@ export default function MoodDonutChart({ moodCounts, total }: { moodCounts: Reco
   }
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-6 w-full min-w-0">
-      <div className="relative size-36 sm:size-48 max-w-full shrink-0">
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 w-full min-w-0 py-2">
+      <div className="relative size-40 sm:size-52 max-w-full shrink-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

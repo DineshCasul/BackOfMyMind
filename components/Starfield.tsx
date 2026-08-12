@@ -1,12 +1,11 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
-
 // A handful of small, individually-twinkling stars, plain SVG circles, not
 // a CSS background-image, so there's nothing expensive to rasterize (see
 // globals.css for why the earlier tiled-gradient approach stuttered).
-// Split into two depth layers: bigger circles ("near") drift a bit more on
-// scroll than smaller ones ("far"), for a subtle parallax depth cue.
+// Two depth layers (bigger/smaller circles) purely for visual variety, no
+// scroll-linked parallax: that used to run an unconditional
+// requestAnimationFrame loop for the entire life of the app on any browser
+// without `animation-timeline: scroll()` support, competing with every
+// other animation on the main thread for a purely decorative depth cue.
 const NEAR_STARS = [
   { x: 8, y: 12, r: 1.3, duration: 5, delay: 0 },
   { x: 27, y: 78, r: 1.3, duration: 4.2, delay: 0.6 },
@@ -29,23 +28,9 @@ const FAR_STARS = [
   { x: 46, y: 92, r: 0.8, duration: 6.6, delay: 0.4 },
 ] as const;
 
-// Max px each layer will ever shift, however far the page scrolls, capped
-// rather than unbounded, so it reads as a gentle settle rather than stars
-// drifting off into nowhere on a long page.
-const NEAR_MAX_SHIFT = 60;
-const FAR_MAX_SHIFT = 24;
-
-function Layer({
-  stars,
-  layerRef,
-  className,
-}: {
-  stars: readonly { x: number; y: number; r: number; duration: number; delay: number }[];
-  layerRef: React.RefObject<SVGGElement | null>;
-  className?: string;
-}) {
+function Layer({ stars }: { stars: readonly { x: number; y: number; r: number; duration: number; delay: number }[] }) {
   return (
-    <g ref={layerRef} className={className}>
+    <g>
       {stars.map((star, i) => (
         <circle
           key={i}
@@ -65,46 +50,10 @@ function Layer({
 }
 
 export default function Starfield() {
-  const nearRef = useRef<SVGGElement>(null);
-  const farRef = useRef<SVGGElement>(null);
-  // Assume the CSS path until proven otherwise, matches what actually
-  // renders server-side and on first paint in the (large majority of)
-  // browsers that support it, so there's no flash of the JS-driven mode.
-  const [cssDriven, setCssDriven] = useState(true);
-
-  useEffect(() => {
-    const supportsScrollTimeline =
-      typeof CSS !== "undefined" && typeof CSS.supports === "function" && CSS.supports("animation-timeline", "scroll()");
-    setCssDriven(supportsScrollTimeline);
-    if (supportsScrollTimeline) return; // globals.css's .star-layer-* handles it, no JS needed
-
-    // Fallback for browsers without scroll-driven animation support yet.
-    // Polls scroll position every frame rather than reacting to the
-    // `scroll` event, so it keeps working regardless of which element ends
-    // up as the actual scrolling box (window vs. an inner container), and
-    // regardless of whether that element reliably bubbles scroll events.
-    let frameId: number;
-    let lastY = -1;
-    function loop() {
-      const y = window.scrollY;
-      if (y !== lastY) {
-        lastY = y;
-        const nearShift = Math.min(y * 0.06, NEAR_MAX_SHIFT);
-        const farShift = Math.min(y * 0.02, FAR_MAX_SHIFT);
-        if (nearRef.current) nearRef.current.style.transform = `translate3d(0, ${nearShift}px, 0)`;
-        if (farRef.current) farRef.current.style.transform = `translate3d(0, ${farShift}px, 0)`;
-      }
-      frameId = requestAnimationFrame(loop);
-    }
-
-    frameId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frameId);
-  }, []);
-
   return (
     <svg className="fixed inset-0 -z-10 w-full h-full" pointerEvents="none" aria-hidden="true">
-      <Layer stars={FAR_STARS} layerRef={farRef} className={cssDriven ? "star-layer-far" : undefined} />
-      <Layer stars={NEAR_STARS} layerRef={nearRef} className={cssDriven ? "star-layer-near" : undefined} />
+      <Layer stars={FAR_STARS} />
+      <Layer stars={NEAR_STARS} />
     </svg>
   );
 }

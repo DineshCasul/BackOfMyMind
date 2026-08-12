@@ -39,8 +39,10 @@ export async function signup(_prevState: AuthState, formData: FormData): Promise
       // the dashboard (Authentication > URL Configuration), which is
       // whatever it happened to default to, not necessarily this app.
       // Must also be added to that project's Redirect URLs allowlist, or
-      // Supabase silently ignores this and falls back anyway.
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
+      // Supabase silently ignores this and falls back anyway. Stripping a
+      // trailing slash off the env var avoids a `..//auth/confirm` double
+      // slash if it's configured with one.
+      emailRedirectTo: `${(process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "")}/auth/confirm`,
     },
   });
 

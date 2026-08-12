@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   name?: string | null;
-  extra?: React.ReactNode;
 };
 
 const INTRO_SEEN_KEY = "backofmymind_intro_seen";
@@ -102,7 +101,7 @@ type Phase = "idle" | "iconIn" | "textIn" | "hold" | "fadeOut" | "done";
 // visitor's local clock, which the server can't know, nothing renders
 // until after mount, same pattern as everywhere else timezone-sensitive
 // in this app, so there's no hydration mismatch.
-export default function Greeting({ name, extra }: Props) {
+export default function Greeting({ name }: Props) {
   const [greeting, setGreeting] = useState<{ text: string; icon: LucideIcon } | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [showOverlay, setShowOverlay] = useState(true);
@@ -174,7 +173,6 @@ export default function Greeting({ name, extra }: Props) {
           {text}
           {name ? `, ${name}` : ""}.
         </h1>
-        <div className="ml-auto">{extra}</div>
       </div>
     </>
   );

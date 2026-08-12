@@ -11,8 +11,9 @@ import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { href: "/", label: "Starfield" },
-  { href: "/journal", label: "Journal" },
-  { href: "/analytics", label: "Analytics" },
+  { href: "/journal", label: "Dreambook" },
+  { href: "/analytics", label: "Patterns" },
+  { href: "/profile", label: "Achievements" },
 ];
 
 // A few fixed positions rather than random-per-render, so they don't

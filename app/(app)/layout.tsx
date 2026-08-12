@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DreamProvider } from "@/context/DreamContext";
+import { AchievementProvider } from "@/context/AchievementContext";
 import Navbar from "@/components/Navbar";
+import AchievementCelebration from "@/components/AchievementCelebration";
 
 // DreamProvider needs a real logged-in user (dreams are fetched scoped to
 // them), which /login and /signup don't have, so this route group, not
@@ -23,8 +25,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <DreamProvider userId={user.id} userEmail={user.email ?? ""}>
-      <Navbar />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</main>
+      <AchievementProvider userId={user.id}>
+        <Navbar />
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</main>
+        <AchievementCelebration />
+      </AchievementProvider>
     </DreamProvider>
   );
 }

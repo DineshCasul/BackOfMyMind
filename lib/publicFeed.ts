@@ -5,6 +5,7 @@ import type { Dream } from "@/context/DreamContext";
 
 export type PublicDream = Dream & {
   authorName: string;
+  authorId: string;
   viewerId: string;
   likeCount: number;
   likedByMe: boolean;
@@ -27,6 +28,7 @@ async function enrichRows(supabase: SupabaseClient, rows: DreamRow[], viewerId: 
   return rows.map((row) => ({
     ...fromRow(row),
     authorName: nameById.get(row.user_id) ?? "Someone",
+    authorId: row.user_id,
     viewerId,
     likeCount: likeInfoByDream.get(row.id)?.count ?? 0,
     likedByMe: likeInfoByDream.get(row.id)?.likedByMe ?? false,
