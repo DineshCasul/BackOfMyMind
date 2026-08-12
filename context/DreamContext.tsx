@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fromRow } from "@/lib/dreams";
@@ -103,101 +103,132 @@ export function DreamProvider({
     })();
   }, [supabase, userId, userEmail]);
 
-  const updateDisplayName = async (name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) throw new Error("Name can't be empty.");
-    const { error } = await supabase
-      .from("profiles")
-      .upsert({ id: userId, display_name: trimmed }, { onConflict: "id" });
-    if (error) throw new Error(error.message);
-    setDisplayName(trimmed);
-    router.refresh();
-  };
-
-  const addDream = async (input: DreamInput) => {
-    const { data, error } = await supabase
-      .from("dreams")
-      .insert({
-        user_id: userId,
-        title: input.title,
-        description: input.description,
-        mood: input.mood,
-        date: input.date,
-        tags: input.tags,
-        dream_type: input.dreamType,
-        people: input.people,
-        setting: input.setting,
-        vividness: input.vividness,
-      })
-      .select()
-      .single();
-
-    if (error) throw new Error(error.message);
-    setDreams((prev) => [fromRow(data), ...prev]);
-  };
-
-  const updateDream = async (id: string, input: Omit<DreamInput, "date">) => {
-    const { data, error } = await supabase
-      .from("dreams")
-      .update({
-        title: input.title,
-        description: input.description,
-        mood: input.mood,
-        tags: input.tags,
-        dream_type: input.dreamType,
-        people: input.people,
-        setting: input.setting,
-        vividness: input.vividness,
-      })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) throw new Error(error.message);
-    setDreams((prev) => prev.map((d) => (d.id === id ? fromRow(data) : d)));
-    router.refresh();
-  };
-
-  const deleteDream = async (id: string) => {
-    const { error } = await supabase.from("dreams").delete().eq("id", id);
-    if (error) throw new Error(error.message);
-    setDreams((prev) => prev.filter((d) => d.id !== id));
-    router.refresh();
-  };
-
-  const togglePublic = async (id: string, isPublic: boolean) => {
-    const { error } = await supabase.from("dreams").update({ is_public: isPublic }).eq("id", id);
-    if (error) throw new Error(error.message);
-    setDreams((prev) => prev.map((d) => (d.id === id ? { ...d, isPublic } : d)));
-    router.refresh();
-  };
-
-  const toggleFavorite = async (id: string, isFavorite: boolean) => {
-    const { error } = await supabase.from("dreams").update({ is_favorite: isFavorite }).eq("id", id);
-    if (error) throw new Error(error.message);
-    setDreams((prev) => prev.map((d) => (d.id === id ? { ...d, isFavorite } : d)));
-    router.refresh();
-  };
-
-  return (
-    <DreamContext.Provider
-      value={{
-        dreams,
-        loading,
-        addDream,
-        updateDream,
-        deleteDream,
-        togglePublic,
-        toggleFavorite,
-        selectedDate,
-        setSelectedDate,
-        displayName,
-        updateDisplayName,
-      }}
-    >
-      {children}
-    </DreamContext.Provider>
+  const updateDisplayName = useCallback(
+    async (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) throw new Error("Name can't be empty.");
+      const { error } = await supabase
+        .from("profiles")
+        .upsert({ id: userId, display_name: trimmed }, { onConflict: "id" });
+      if (error) throw new Error(error.message);
+      setDisplayName(trimmed);
+      router.refresh();
+    },
+    [supabase, userId, router]
   );
+
+  const addDream = useCallback(
+    async (input: DreamInput) => {
+      const { data, error } = await supabase
+        .from("dreams")
+        .insert({
+          user_id: userId,
+          title: input.title,
+          description: input.description,
+          mood: input.mood,
+          date: input.date,
+          tags: input.tags,
+          dream_type: input.dreamType,
+          people: input.people,
+          setting: input.setting,
+          vividness: input.vividness,
+        })
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      setDreams((prev) => [fromRow(data), ...prev]);
+    },
+    [supabase, userId]
+  );
+
+  const updateDream = useCallback(
+    async (id: string, input: Omit<DreamInput, "date">) => {
+      const { data, error } = await supabase
+        .from("dreams")
+        .update({
+          title: input.title,
+          description: input.description,
+          mood: input.mood,
+          tags: input.tags,
+          dream_type: input.dreamType,
+          people: input.people,
+          setting: input.setting,
+          vividness: input.vividness,
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      setDreams((prev) => prev.map((d) => (d.id === id ? fromRow(data) : d)));
+      router.refresh();
+    },
+    [supabase, router]
+  );
+
+  const deleteDream = useCallback(
+    async (id: string) => {
+      const { error } = await supabase.from("dreams").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+      setDreams((prev) => prev.filter((d) => d.id !== id));
+      router.refresh();
+    },
+    [supabase, router]
+  );
+
+  const togglePublic = useCallback(
+    async (id: string, isPublic: boolean) => {
+      const { error } = await supabase.from("dreams").update({ is_public: isPublic }).eq("id", id);
+      if (error) throw new Error(error.message);
+      setDreams((prev) => prev.map((d) => (d.id === id ? { ...d, isPublic } : d)));
+      router.refresh();
+    },
+    [supabase, router]
+  );
+
+  const toggleFavorite = useCallback(
+    async (id: string, isFavorite: boolean) => {
+      const { error } = await supabase.from("dreams").update({ is_favorite: isFavorite }).eq("id", id);
+      if (error) throw new Error(error.message);
+      setDreams((prev) => prev.map((d) => (d.id === id ? { ...d, isFavorite } : d)));
+      router.refresh();
+    },
+    [supabase, router]
+  );
+
+  // Stable reference so consumers that only read a subset of the context
+  // (e.g. AchievementContext watching `dreams`) don't re-render on every
+  // DreamProvider render, only when a value they depend on actually changes.
+  const value = useMemo(
+    () => ({
+      dreams,
+      loading,
+      addDream,
+      updateDream,
+      deleteDream,
+      togglePublic,
+      toggleFavorite,
+      selectedDate,
+      setSelectedDate,
+      displayName,
+      updateDisplayName,
+    }),
+    [
+      dreams,
+      loading,
+      addDream,
+      updateDream,
+      deleteDream,
+      togglePublic,
+      toggleFavorite,
+      selectedDate,
+      displayName,
+      updateDisplayName,
+    ]
+  );
+
+  return <DreamContext.Provider value={value}>{children}</DreamContext.Provider>;
 }
 
 export function useDreams() {

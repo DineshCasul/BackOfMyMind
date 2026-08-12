@@ -29,7 +29,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${quicksand.variable} ${fraunces.variable}`}>
-      <body className="min-h-screen font-sans">
+      <body className="relative min-h-screen font-sans">
         <Starfield />
         <HeaderGlow />
         {children}

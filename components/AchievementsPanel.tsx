@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useAchievements } from "@/context/AchievementContext";
 import { ACHIEVEMENTS, CATEGORY_LABELS, CATEGORY_ORDER } from "@/lib/achievements";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,42 +8,21 @@ import { cn } from "@/lib/utils";
 import { Award } from "lucide-react";
 
 export default function AchievementsPanel() {
-  const { stats, unlockedIds, loading, syncToCurrentDreams } = useAchievements();
-  const [syncing, setSyncing] = useState(false);
+  const { stats, unlockedIds, loading } = useAchievements();
 
   if (loading) {
     return <LoadingState label="Tallying your badges…" />;
   }
 
-  async function handleSync() {
-    if (syncing) return;
-    setSyncing(true);
-    try {
-      await syncToCurrentDreams();
-    } finally {
-      setSyncing(false);
-    }
-  }
-
   return (
     <>
-      <div className="flex items-center gap-2.5 mb-1 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
+      <div className="flex items-center gap-2.5 mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
         <Award className="size-6 text-primary" strokeWidth={1.5} />
         <h2 className="text-2xl font-serif">Achievements</h2>
         <span className="text-sm text-muted-foreground ml-1">
           {unlockedIds.size}/{ACHIEVEMENTS.length}
         </span>
       </div>
-
-      {/* Maintenance action for test/dev data, not part of the normal
-          "badges are permanent" flow, deliberately small and out of the way. */}
-      <button
-        onClick={handleSync}
-        disabled={syncing}
-        className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 mb-6 cursor-pointer disabled:opacity-50"
-      >
-        {syncing ? "Syncing…" : "Remove badges my current dreams no longer justify"}
-      </button>
 
       <div className="flex flex-col gap-6">
         {CATEGORY_ORDER.map((category) => {

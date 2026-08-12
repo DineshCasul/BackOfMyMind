@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useDreams } from "@/context/DreamContext";
 import { getLikeInfo } from "@/lib/likes";
@@ -18,11 +18,6 @@ type AchievementContextValue = {
   loading: boolean;
   celebrating: Achievement | null;
   dismissCelebration: () => void;
-  // Deletes any persisted badge that isn't currently true from live
-  // dreams, e.g. after test data leaves you with more "permanent" badges
-  // recorded than your real dreams justify. Not used by the normal unlock
-  // flow, which never removes rows.
-  syncToCurrentDreams: () => Promise<void>;
 };
 
 const Ctx = createContext<AchievementContextValue | undefined>(undefined);
@@ -148,38 +143,20 @@ export function AchievementProvider({ userId, children }: { userId: string; chil
     setQueue((q) => q.slice(1));
   }, [celebrating, queue]);
 
-  async function syncToCurrentDreams() {
-    if (!stored) return;
-    const liveIds = new Set(computeUnlockedAchievementIds(stats));
-    const staleIds = [...stored.keys()].filter((id) => !liveIds.has(id));
-    if (staleIds.length === 0) return;
+  const dismissCelebration = useCallback(() => setCelebrating(null), []);
 
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("dream_achievements")
-      .delete()
-      .eq("user_id", userId)
-      .in("achievement_id", staleIds);
-    if (error) return;
+  const loading = dreamsLoading || stored === null || likesReceived === null;
 
-    setStored((prev) => {
-      const next = new Map(prev ?? []);
-      staleIds.forEach((id) => next.delete(id));
-      return next;
-    });
-    // Lets a badge removed here genuinely re-earn (and re-celebrate) later
-    // instead of being silently blocked by session dedup state.
-    staleIds.forEach((id) => celebratedRef.current.delete(id));
-  }
-
-  const value: AchievementContextValue = {
-    stats,
-    unlockedIds,
-    loading: dreamsLoading || stored === null || likesReceived === null,
-    syncToCurrentDreams,
-    celebrating,
-    dismissCelebration: () => setCelebrating(null),
-  };
+  const value: AchievementContextValue = useMemo(
+    () => ({
+      stats,
+      unlockedIds,
+      loading,
+      celebrating,
+      dismissCelebration,
+    }),
+    [stats, unlockedIds, loading, celebrating, dismissCelebration]
+  );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

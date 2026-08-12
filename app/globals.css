@@ -120,14 +120,28 @@
   }
 }
 
-/* Each star is a tiny individually-animated SVG <circle> (see
-   components/Starfield.tsx), deliberately not a CSS background-image, even
-   a transform-animated one. A handful of small elements each only ever
-   compositing their own opacity is cheap regardless of hardware; a single
-   huge tiled multi-gradient layer covering (viewport + margin)² is a lot of
-   surface for the GPU to rasterize even when the animation itself is
-   composited, and that's what was still causing the stutter. No drift
-   either now, it wasn't buying much visually for what it cost. */
+/* Page-wide star background (components/Starfield.tsx): a single static
+   tiled radial-gradient layer, no animation and no `position: fixed`. The
+   earlier version (tiled multi-gradient + drift animation, still fixed to
+   the viewport) was what caused stutter, since an animated tiled gradient
+   forces the GPU to keep rasterizing that whole surface every frame. A
+   *static* tiled gradient only needs to be rasterized once and then just
+   scrolls with the page like a normal background, so it's cheap without
+   needing per-star SVG elements. */
+.star-bg {
+  background-image: radial-gradient(1px 1px at 12px 20px, oklch(1 0 0 / 70%), transparent 100%),
+    radial-gradient(1px 1px at 78px 8px, oklch(1 0 0 / 45%), transparent 100%),
+    radial-gradient(1.5px 1.5px at 45px 55px, oklch(1 0 0 / 60%), transparent 100%),
+    radial-gradient(1px 1px at 130px 40px, oklch(1 0 0 / 50%), transparent 100%),
+    radial-gradient(1.5px 1.5px at 160px 90px, oklch(1 0 0 / 65%), transparent 100%),
+    radial-gradient(1px 1px at 20px 120px, oklch(1 0 0 / 45%), transparent 100%),
+    radial-gradient(1px 1px at 95px 135px, oklch(1 0 0 / 55%), transparent 100%),
+    radial-gradient(1.2px 1.2px at 175px 150px, oklch(1 0 0 / 50%), transparent 100%),
+    radial-gradient(1px 1px at 60px 175px, oklch(1 0 0 / 40%), transparent 100%),
+    radial-gradient(1.3px 1.3px at 140px 10px, oklch(1 0 0 / 55%), transparent 100%);
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
 /* Empty-day "no dreams yet" indicator (LiveFeed.tsx): three Z's drifting
    up and fading, staggered so there's always one mid-cycle, classic
    comic-sleep motif. Forward-only, no alternate, so there's no

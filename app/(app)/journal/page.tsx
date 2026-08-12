@@ -56,74 +56,15 @@ export default function JournalPage() {
 
   return (
     <>
-      <div className="flex items-center gap-2.5 mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
-        <MoonStar className="size-6 text-primary" strokeWidth={1.5} />
-        <h2 className="text-2xl font-serif">Your Dreams</h2>
-        {currentStreak > 0 && (
-          <span className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">
-            <Flame className="size-3.5" strokeWidth={1.75} />
-            {currentStreak} day{currentStreak === 1 ? "" : "s"}
-          </span>
-        )}
-      </div>
-
-      {/* Mood filter + Add Dream, always the same row so the add button
-          never drops to an orphaned line of its own on narrow screens;
-          items-start so it stays pinned top-right even once the chips wrap
-          onto multiple lines. */}
-      <div className="flex items-start justify-between gap-3 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75 fill-mode-both">
-        <div className="flex gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setFilterMood("all")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-all duration-200 hover:scale-105 cursor-pointer",
-              filterMood === "all"
-                ? "bg-primary text-primary-foreground border-primary"
-                : "border-border text-muted-foreground hover:bg-accent"
-            )}
-          >
-            <Sparkles className="size-3.5" strokeWidth={1.75} />
-            All
-          </button>
-          {visibleMoods.map((m) => {
-            const { icon: Icon, label } = MOOD_META[m];
-            const selected = filterMood === m;
-            return (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setFilterMood(m)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-all duration-200 hover:scale-105 cursor-pointer",
-                  selected
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-border text-muted-foreground hover:bg-accent"
-                )}
-              >
-                <Icon className="size-3.5" strokeWidth={1.75} />
-                {label}
-              </button>
-            );
-          })}
-          {hasHiddenMoods && (
-            <button
-              type="button"
-              onClick={() => setShowAllMoods((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border border-dashed border-border text-muted-foreground hover:bg-accent transition-all duration-200 hover:scale-105 cursor-pointer"
-            >
-              {showAllMoods ? (
-                <>
-                  <ChevronUp className="size-3.5" strokeWidth={1.75} />
-                  Less
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="size-3.5" strokeWidth={1.75} />
-                  More
-                </>
-              )}
-            </button>
+      <div className="flex items-center justify-between gap-3 mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
+        <div className="flex items-center gap-2.5">
+          <MoonStar className="size-6 text-primary" strokeWidth={1.5} />
+          <h2 className="text-2xl font-serif">Your Dreams</h2>
+          {currentStreak > 0 && (
+            <span className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+              <Flame className="size-3.5" strokeWidth={1.75} />
+              {currentStreak} day{currentStreak === 1 ? "" : "s"}
+            </span>
           )}
         </div>
 
@@ -135,6 +76,63 @@ export default function JournalPage() {
             </span>
           </Button>
         </FormModal>
+      </div>
+
+      {/* Mood filter row, now on its own since Add Dream moved up next to
+          the title. */}
+      <div className="flex gap-2 flex-wrap mb-3 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75 fill-mode-both">
+        <button
+          type="button"
+          onClick={() => setFilterMood("all")}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-all duration-200 hover:scale-105 cursor-pointer",
+            filterMood === "all"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "border-border text-muted-foreground hover:bg-accent"
+          )}
+        >
+          <Sparkles className="size-3.5" strokeWidth={1.75} />
+          All
+        </button>
+        {visibleMoods.map((m) => {
+          const { icon: Icon, label } = MOOD_META[m];
+          const selected = filterMood === m;
+          return (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setFilterMood(m)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-all duration-200 hover:scale-105 cursor-pointer",
+                selected
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:bg-accent"
+              )}
+            >
+              <Icon className="size-3.5" strokeWidth={1.75} />
+              {label}
+            </button>
+          );
+        })}
+        {hasHiddenMoods && (
+          <button
+            type="button"
+            onClick={() => setShowAllMoods((v) => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border border-dashed border-border text-muted-foreground hover:bg-accent transition-all duration-200 hover:scale-105 cursor-pointer"
+          >
+            {showAllMoods ? (
+              <>
+                <ChevronUp className="size-3.5" strokeWidth={1.75} />
+                Less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="size-3.5" strokeWidth={1.75} />
+                More
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Desktop: search left, date picker right, same row. Mobile: stacks,
