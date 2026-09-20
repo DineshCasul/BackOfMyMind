@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { Trash2, Share2, Star, Globe, Lock, ArrowUpRight, Flame, Check } from "lucide-react";
+import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { format } from "date-fns";
+import { Trash2, Share2, Star, Globe, Lock, Flame, Check } from "lucide-react";
 import { toPng } from "html-to-image";
 import FormModal from "./FormModal";
 import DreamShareCard from "./DreamShareCard";
+import { useToast } from "@/components/Toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,7 +20,7 @@ import type { Dream, DreamInput } from "@/context/DreamContext";
 import { MOOD_META } from "@/lib/moods";
 import { DREAM_TYPE_META } from "@/lib/dreamTypes";
 import { computeStreaks } from "@/lib/streaks";
-import { cn } from "@/lib/utils";
+import { cn, parseLocalDateString } from "@/lib/utils";
 
 interface DreamCardProps extends Dream {
   onEdit: (id: string, values: Omit<DreamInput, "date">) => Promise<void>;
@@ -52,6 +54,7 @@ export default function DreamCard({
   allDreams,
   className,
 }: DreamCardProps) {
+  const toast = useToast();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -62,6 +65,9 @@ export default function DreamCard({
   const shareCardRef = useRef<HTMLDivElement>(null);
   const { icon: MoodIcon, label: moodLabel, colorClass } = MOOD_META[mood];
   const { icon: TypeIcon, label: typeLabel } = DREAM_TYPE_META[dreamType];
+  // Short form on the card, the long form as the edit form's page heading.
+  const dateStamp = format(parseLocalDateString(date), "EEE d MMM");
+  const dateLabel = format(parseLocalDateString(date), "EEEE, d MMMM");
 
   // Only worth computing while the dialog asking about it is actually
   // open. Naturally comes out "no impact" unless this is the only dream
@@ -98,7 +104,7 @@ export default function DreamCard({
     try {
       await onTogglePublic(id, !isPublic);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update.");
+      toast(err instanceof Error ? err.message : "Couldn't update that dream.", "error");
     } finally {
       setIsToggling(false);
     }
@@ -111,7 +117,7 @@ export default function DreamCard({
     try {
       await onToggleFavorite(id, !isFavorite);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update.");
+      toast(err instanceof Error ? err.message : "Couldn't update that dream.", "error");
     } finally {
       setIsFavoriting(false);
     }
@@ -123,7 +129,7 @@ export default function DreamCard({
       await onDelete(id);
       setIsConfirmingDelete(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete.");
+      toast(err instanceof Error ? err.message : "Couldn't delete that dream.", "error");
     } finally {
       setIsDeleting(false);
     }
@@ -192,65 +198,73 @@ export default function DreamCard({
 
   return (
     <>
+      {/* A page from the journal. The mood colour appears three quiet ways
+          instead of one loud border: an aura in the top-left corner, the
+          bookmark ribbon (gold once it's a favourite), and the glow it casts
+          on hover. */}
       <div
         onClick={() => setIsEditModalOpen(true)}
-        style={
-          {
-            borderLeftColor: `var(--mood-${mood})`,
-            borderLeftWidth: 3,
-            "--card-glow": `var(--mood-${mood})`,
-          } as React.CSSProperties & Record<string, string | number>
-        }
+        style={{ "--m": `var(--mood-${mood})`, "--ribbon": isFavorite ? "var(--gold)" : `var(--mood-${mood})` } as CSSProperties}
         className={cn(
-          "group cursor-pointer flex flex-col justify-between gap-3 p-4 rounded-xl border border-border bg-card transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_var(--card-glow)]",
+          "group surface relative cursor-pointer flex flex-col justify-between gap-4 p-5 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-22px_var(--m)] hover:border-[color-mix(in_oklch,var(--m)_40%,transparent)]",
           className
         )}
       >
-        <div>
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <div className={cn("flex items-center gap-1.5 text-xs font-medium", colorClass)}>
-              <MoodIcon className="size-3.5" strokeWidth={2} />
-              <span className="uppercase tracking-wide">{moodLabel}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <TypeIcon className="size-3" strokeWidth={1.75} />
-                {typeLabel}
-              </div>
-              <ArrowUpRight
-                className="size-3.5 text-muted-foreground opacity-0 -translate-x-1 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0"
-                strokeWidth={2}
-              />
-            </div>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-2xl opacity-70 transition-opacity duration-300 group-hover:opacity-100"
+          style={{ background: "radial-gradient(120% 90% at 0% 0%, color-mix(in oklch, var(--m) 16%, transparent), transparent 55%)" }}
+        />
+        <span className="ribbon" aria-hidden="true" />
+
+        <div className="relative">
+          <div className="flex items-center justify-between gap-2 pr-8">
+            <span className="font-hand text-lg leading-none text-muted-foreground">{dateStamp}</span>
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <TypeIcon className="size-3" strokeWidth={1.75} />
+              {typeLabel}
+            </span>
           </div>
-          <h4 className="font-semibold text-lg mb-1 text-card-foreground">{title}</h4>
-          <p className="text-muted-foreground text-sm line-clamp-3">{description}</p>
+
+          <div className={cn("mt-2.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider", colorClass)}>
+            <MoodIcon className="size-3.5" strokeWidth={2} />
+            {moodLabel}
+          </div>
+
+          <h4 className="font-serif text-xl leading-snug mt-1 mb-2.5 text-card-foreground">{title}</h4>
+
+          {/* Ruled like the page it's written on: the 26px rule spacing is
+              also the line height, so text sits between the lines. */}
+          <p className="ruled-lines line-clamp-3 text-sm text-muted-foreground [--line:26px]">{description}</p>
+
           {tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-3">
               {tags.slice(0, 3).map((tag) => (
-                <span
-                  key={tag}
-                  className="text-[10px] px-2 py-0.5 rounded-full border border-border text-muted-foreground"
-                >
-                  {tag}
+                <span key={tag} className="font-hand text-lg leading-6 text-primary/80">
+                  #{tag}
                 </span>
               ))}
+              {tags.length > 3 && <span className="font-hand text-lg leading-6 text-muted-foreground">+{tags.length - 3}</span>}
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-0.5" aria-label={`Vividness ${vividness} out of 5`}>
             {[1, 2, 3, 4, 5].map((n) => (
               <Star
                 key={n}
-                className={cn("size-3", n <= vividness ? "text-primary" : "text-muted-foreground/40")}
+                className={cn("size-3.5", n <= vividness ? "text-gold" : "text-muted-foreground/30")}
                 fill={n <= vividness ? "currentColor" : "none"}
                 strokeWidth={1.5}
               />
             ))}
           </div>
-          <div className="flex items-center gap-3">
+          {/* Slightly dimmed until the card is hovered or focused, so the
+              resting list reads as pages, not a wall of toolbars. Still fully
+              reachable by keyboard (focus-within), and never hidden, so touch
+              screens (no hover) keep working. */}
+          <div className="flex items-center gap-1 opacity-70 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
             <button
               onClick={handleToggleFavorite}
               disabled={isFavoriting}
@@ -258,8 +272,8 @@ export default function DreamCard({
               aria-pressed={isFavorite}
               title={isFavorite ? "Favorite" : "Mark as favorite"}
               className={cn(
-                "transition-colors p-1 -m-1 rounded cursor-pointer disabled:opacity-50",
-                isFavorite ? "text-primary" : "text-muted-foreground hover:text-primary"
+                "flex size-8 items-center justify-center rounded-full transition-colors cursor-pointer disabled:opacity-50",
+                isFavorite ? "text-gold hover:bg-gold/10" : "text-muted-foreground hover:text-gold hover:bg-white/[0.07]"
               )}
             >
               <Star className="size-4" fill={isFavorite ? "currentColor" : "none"} strokeWidth={1.75} />
@@ -271,28 +285,20 @@ export default function DreamCard({
               aria-pressed={isPublic}
               title={isPublic ? "On the public feed" : "Private, share to feed"}
               className={cn(
-                "transition-colors p-1 -m-1 rounded cursor-pointer disabled:opacity-50",
-                isPublic ? "text-primary hover:text-muted-foreground" : "text-muted-foreground hover:text-primary"
+                "flex size-8 items-center justify-center rounded-full transition-colors cursor-pointer disabled:opacity-50",
+                isPublic ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-white/[0.07]"
               )}
             >
-              {isPublic ? (
-                <Globe className="size-4" strokeWidth={1.75} />
-              ) : (
-                <Lock className="size-4" strokeWidth={1.75} />
-              )}
+              {isPublic ? <Globe className="size-4" strokeWidth={1.75} /> : <Lock className="size-4" strokeWidth={1.75} />}
             </button>
             <button
               onClick={handleShare}
               disabled={isSharing}
               aria-label={`Share "${title}"`}
               title={justCopiedLink ? "Link copied!" : undefined}
-              className="text-muted-foreground hover:text-primary transition-colors p-1 -m-1 rounded cursor-pointer disabled:opacity-50"
+              className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-primary hover:bg-white/[0.07] cursor-pointer disabled:opacity-50"
             >
-              {justCopiedLink ? (
-                <Check className="size-4 text-primary" strokeWidth={1.75} />
-              ) : (
-                <Share2 className="size-4" strokeWidth={1.75} />
-              )}
+              {justCopiedLink ? <Check className="size-4 text-primary" strokeWidth={1.75} /> : <Share2 className="size-4" strokeWidth={1.75} />}
             </button>
             <button
               onClick={(e) => {
@@ -300,7 +306,7 @@ export default function DreamCard({
                 setIsConfirmingDelete(true);
               }}
               aria-label={`Delete "${title}"`}
-              className="text-muted-foreground hover:text-destructive transition-colors p-1 -m-1 rounded cursor-pointer"
+              className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10 cursor-pointer"
             >
               <Trash2 className="size-4" strokeWidth={1.75} />
             </button>
@@ -317,6 +323,7 @@ export default function DreamCard({
       <FormModal
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
+        dateLabel={dateLabel}
         initialTitle={title}
         initialDescription={description}
         initialMood={mood}

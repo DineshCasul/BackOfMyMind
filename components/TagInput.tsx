@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type KeyboardEvent } from "react";
+import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -8,6 +9,8 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   label: string;
+  /** A handwritten nudge next to the label. */
+  hint?: string;
   value: string[];
   onChange: (next: string[]) => void;
   knownOptions?: string[];
@@ -24,6 +27,8 @@ function distinctSorted(values: string[]): string[] {
   );
 }
 
+// A selected chip fills with the lavender accent, an unselected one is a
+// quiet outline. `#` in front reads as a tag at a glance without a label.
 function Chip({ option, selected, onClick }: { option: string; selected: boolean; onClick: () => void }) {
   return (
     <button
@@ -31,12 +36,13 @@ function Chip({ option, selected, onClick }: { option: string; selected: boolean
       onClick={onClick}
       aria-pressed={selected}
       className={cn(
-        "px-2.5 py-1 rounded-full text-xs border transition-all duration-200 hover:scale-105 cursor-pointer",
+        "px-2.5 py-1 rounded-full text-xs border transition-all duration-200 cursor-pointer active:scale-95",
         selected
-          ? "bg-primary text-primary-foreground border-primary"
-          : "border-border text-muted-foreground hover:bg-accent"
+          ? "bg-primary/20 text-primary border-primary/60 shadow-[0_0_16px_-6px_var(--color-primary)]"
+          : "border-white/10 text-muted-foreground hover:border-white/25 hover:text-foreground hover:bg-white/[0.04]"
       )}
     >
+      <span className="opacity-60">#</span>
       {option}
     </button>
   );
@@ -45,7 +51,7 @@ function Chip({ option, selected, onClick }: { option: string; selected: boolean
 // Toggleable chips sourced from values already used elsewhere (so typo
 // variants don't multiply), plus free-text add for anything new, used for
 // both tags and people in the dream form.
-export default function TagInput({ label, value, onChange, knownOptions = [], placeholder = "Add…" }: Props) {
+export default function TagInput({ label, hint, value, onChange, knownOptions = [], placeholder = "Add…" }: Props) {
   const [draft, setDraft] = useState("");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [filter, setFilter] = useState("");
@@ -98,9 +104,12 @@ export default function TagInput({ label, value, onChange, knownOptions = [], pl
 
   return (
     <div>
-      <label className="block text-sm font-medium mb-1.5">{label}</label>
+      <div className="flex items-baseline justify-between gap-3 mb-2">
+        <span className="text-sm font-medium">{label}</span>
+        {hint && <span className="font-hand text-base text-muted-foreground">{hint}</span>}
+      </div>
       {allOptions.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+        <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
           {visibleOptions.map((option) => (
             <Chip key={option} option={option} selected={value.includes(option)} onClick={() => toggle(option)} />
           ))}
@@ -108,7 +117,7 @@ export default function TagInput({ label, value, onChange, knownOptions = [], pl
             <button
               type="button"
               onClick={() => setIsPickerOpen(true)}
-              className="px-2.5 py-1 rounded-full text-xs border border-dashed border-border text-muted-foreground hover:bg-accent transition-all duration-200 hover:scale-105 cursor-pointer"
+              className="px-2.5 py-1 rounded-full text-xs border border-dashed border-white/15 text-muted-foreground hover:bg-white/[0.05] hover:text-foreground transition-all duration-200 cursor-pointer active:scale-95"
             >
               +{hiddenCount} more
             </button>
@@ -116,14 +125,9 @@ export default function TagInput({ label, value, onChange, knownOptions = [], pl
         </div>
       )}
       <div className="flex gap-2">
-        <Input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-        />
-        <Button type="button" variant="outline" size="sm" onClick={addDraft}>
-          Add
+        <Input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={handleKeyDown} placeholder={placeholder} />
+        <Button type="button" variant="outline" size="icon" onClick={addDraft} aria-label={`Add ${label.toLowerCase()}`} className="shrink-0 h-11 w-11">
+          <Plus />
         </Button>
       </div>
 

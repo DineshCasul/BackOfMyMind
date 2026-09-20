@@ -79,7 +79,7 @@ export default function WeekDatePicker({
             defaults to min-width: auto, so the row would just push the whole
             picker wider than the viewport on narrow screens instead of
             scrolling internally. */}
-        <div className="flex gap-1.5 overflow-x-auto min-w-0">
+        <div className="flex gap-1.5 overflow-x-auto min-w-0 px-2.5 py-2 -my-2">
           {days.map((d) => {
             const value = toLocalDateString(d);
             const isSelected = value === selectedDate;
@@ -99,14 +99,14 @@ export default function WeekDatePicker({
                   className={cn(
                     "flex items-center justify-center size-8 sm:size-9 rounded-full border text-sm font-semibold transition-all duration-200 hover:scale-105",
                     isSelected
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border text-muted-foreground hover:bg-accent"
+                      ? "bg-primary text-primary-foreground border-primary shadow-[0_0_20px_-4px_var(--color-primary)]"
+                      : "border-white/10 text-muted-foreground hover:bg-white/[0.06] hover:border-white/25"
                   )}
                 >
                   {d.getDate()}
                 </span>
                 <span
-                  className={cn("size-1 rounded-full", hasDream ? (isSelected ? "bg-primary" : "bg-primary/70") : "bg-transparent")}
+                  className={cn("size-1 rounded-full", hasDream ? (isSelected ? "bg-gold" : "bg-gold/70") : "bg-transparent")}
                 />
               </button>
             );

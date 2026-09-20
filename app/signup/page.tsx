@@ -1,80 +1,117 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Moon } from "lucide-react";
+import { ArrowRight, Check, Loader2, Lock, Mail, MailCheck, TriangleAlert, User } from "lucide-react";
 import { signup, type AuthState } from "../login/actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import AuthShell from "@/components/auth/AuthShell";
+import AuthField from "@/components/auth/AuthField";
+import { cn } from "@/lib/utils";
 
 const initialState: AuthState = { error: null };
+const MIN_LENGTH = 6; // matches the input's minLength below and Supabase's minimum
+
+// Three bars, not a score: 6+ characters is required, 10+ is better, and
+// mixing letters with numbers or symbols is best. Only the first one is
+// enforced; the rest is encouragement, so it never blocks a valid password.
+function strength(pw: string): number {
+  if (pw.length < MIN_LENGTH) return 0;
+  let s = 1;
+  if (pw.length >= 10) s++;
+  if (/[a-z]/i.test(pw) && /[\d\W_]/.test(pw)) s++;
+  return s;
+}
+
+const STRENGTH_LABEL = ["", "Good enough to start", "Solid", "Strong"];
 
 export default function SignupPage() {
   const [state, formAction, isPending] = useActionState(signup, initialState);
+  const [password, setPassword] = useState("");
+  const level = strength(password);
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center gap-2 mb-8 animate-in fade-in slide-in-from-top-2 duration-500 fill-mode-both">
-          <Moon className="size-8 text-primary" strokeWidth={1.5} />
-          <h1 className="text-xl font-logo italic tracking-wide">back of my mind</h1>
-        </div>
-
-        {state.message ? (
-          <div className="border border-border rounded-lg bg-card p-6 text-center animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75 fill-mode-both">
-            <p className="text-sm">{state.message}</p>
-            <Link href="/login" className="inline-block mt-4 text-primary hover:underline text-sm">
-              Go to login
-            </Link>
-          </div>
-        ) : (
-          <form
-            action={formAction}
-            className="border border-border rounded-lg bg-card p-6 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75 fill-mode-both"
-          >
-            <h2 className="text-lg font-serif text-center mb-1">Start your journal</h2>
-
-            <div>
-              <label className="block text-sm font-medium mb-1.5" htmlFor="displayName">
-                Name <span className="text-muted-foreground font-normal">(optional)</span>
-              </label>
-              <Input id="displayName" name="displayName" type="text" autoComplete="nickname" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5" htmlFor="email">
-                Email
-              </label>
-              <Input id="email" name="email" type="email" autoComplete="email" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5" htmlFor="password">
-                Password
-              </label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                minLength={6}
-                required
-              />
-            </div>
-
-            {state.error && <p className="text-destructive text-sm">{state.error}</p>}
-
-            <Button type="submit" disabled={isPending} className="mt-1">
-              {isPending ? "Creating account…" : "Sign Up"}
-            </Button>
-          </form>
-        )}
-
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          Already have an account?{" "}
-          <Link href="/login" className="text-primary hover:underline">
+    <AuthShell
+      title={state.message ? "Check your inbox" : "Start your journal"}
+      note={state.message ? "one small step left" : "every dream starts as a blank page"}
+      footer={
+        <>
+          Already keeping one?{" "}
+          <Link href="/login" className="text-primary font-medium underline-offset-4 hover:underline">
             Log in
           </Link>
-        </p>
-      </div>
-    </div>
+        </>
+      }
+    >
+      {state.message ? (
+        <div className="text-center animate-in fade-in duration-500">
+          <span className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <MailCheck className="size-7" strokeWidth={1.5} />
+          </span>
+          <p className="text-sm text-muted-foreground leading-relaxed">{state.message}</p>
+          <Button asChild variant="outline" className="mt-5">
+            <Link href="/login">
+              Go to login <ArrowRight />
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <form action={formAction} className="flex flex-col gap-4">
+          <AuthField label="Name" icon={User} name="displayName" type="text" autoComplete="nickname" placeholder="What should we call you?" optional />
+          <AuthField label="Email" icon={Mail} name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
+          <AuthField
+            label="Password"
+            icon={Lock}
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder={`At least ${MIN_LENGTH} characters`}
+            minLength={MIN_LENGTH}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            hint={
+              <div className="flex items-center gap-2" aria-live="polite">
+                <div className="flex flex-1 gap-1" aria-hidden="true">
+                  {[1, 2, 3].map((n) => (
+                    <span
+                      key={n}
+                      className={cn("h-1 flex-1 rounded-full transition-colors duration-300", n <= level ? "bg-primary" : "bg-white/10")}
+                    />
+                  ))}
+                </div>
+                <span className="flex items-center gap-1 shrink-0">
+                  {level > 0 && <Check className="size-3 text-primary" strokeWidth={2.5} />}
+                  {level > 0 ? STRENGTH_LABEL[level] : `${MIN_LENGTH}+ characters`}
+                </span>
+              </div>
+            }
+          />
+
+          {state.error && (
+            <div
+              key={state.error}
+              role="alert"
+              className="animate-shake flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+            >
+              <TriangleAlert className="size-4 shrink-0 mt-0.5" strokeWidth={1.75} />
+              <span>{state.error}</span>
+            </div>
+          )}
+
+          <Button type="submit" size="lg" disabled={isPending} className="mt-1 w-full">
+            {isPending ? (
+              <>
+                <Loader2 className="animate-spin" /> Creating your journal…
+              </>
+            ) : (
+              <>
+                Begin <ArrowRight />
+              </>
+            )}
+          </Button>
+        </form>
+      )}
+    </AuthShell>
   );
 }

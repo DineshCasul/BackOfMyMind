@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fromRow } from "@/lib/dreams";
 import { toLocalDateString } from "@/lib/utils";
+import { useToast } from "@/components/Toast";
 
 export type MoodType = "happy" | "excited" | "peaceful" | "neutral" | "annoyed" | "sad" | "angry";
 export type DreamType = "normal" | "lucid" | "nightmare" | "recurring";
@@ -22,6 +23,8 @@ export type Dream = {
   vividness: number; // 1-5
   isPublic: boolean;
   isFavorite: boolean;
+  /** ISO timestamp the row was created. Absent on dreams built client-side before a reload. */
+  createdAt?: string;
 };
 
 // Everything addDream/updateDream need, minus what the caller doesn't
@@ -38,6 +41,13 @@ export type DreamInput = {
   setting: string;
   vividness: number;
 };
+
+// What the profile lookup on the server found. Only "missing" and "unnamed"
+// justify writing a name; "error" means we don't KNOW, and a write based on
+// not knowing is exactly how a real nickname gets overwritten.
+export type ProfileState = "ok" | "missing" | "unnamed" | "error";
+
+export const DISPLAY_NAME_MAX = 40;
 
 export type DreamContextType = {
   dreams: Dream[];
@@ -58,16 +68,37 @@ const DreamContext = createContext<DreamContextType | undefined>(undefined);
 export function DreamProvider({
   userId,
   userEmail,
+  serverToday,
+  initialProfile,
   children,
 }: {
   userId: string;
   userEmail: string;
+  /** What the server found when it looked up this user's profile row. */
+  initialProfile: { name: string; state: ProfileState };
+  /** "Today" as the server sees it. Used as the very first selected date so
+      the server render and the browser's first render agree (see below). */
+  serverToday: string;
   children: ReactNode;
 }) {
+  const toast = useToast();
   const [dreams, setDreams] = useState<Dream[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<string>(toLocalDateString(new Date()));
-  const [displayName, setDisplayName] = useState("");
+  // The server and the visitor's browser can be on different calendar days:
+  // at 1am in India the server (UTC) is still on yesterday. The first render
+  // must match what the server sent, so it starts from the server's "today";
+  // then, right after hydration, it moves to the visitor's own today, unless
+  // they have already picked a day by then. Starting from the browser's date
+  // instead would cause a hydration mismatch, and starting from the server's
+  // date and staying there would open the journal on the wrong day.
+  const [selectedDate, setSelectedDate] = useState<string>(serverToday);
+  useEffect(() => {
+    const localToday = toLocalDateString(new Date());
+    setSelectedDate((current) => (current === serverToday ? localToday : current));
+  }, [serverToday]);
+  // Starts as the server's answer, so the very first paint already has the
+  // right name (no flash of an empty name or a fallback).
+  const [displayName, setDisplayName] = useState(initialProfile.name);
   const supabase = createClient();
   const router = useRouter();
 
@@ -77,36 +108,58 @@ export function DreamProvider({
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
-    if (!error && data) setDreams(data.map(fromRow));
+    if (error) {
+      // Without this an outage looks exactly like an empty journal.
+      toast("Couldn't load your dreams. Check your connection and refresh.", "error");
+    } else if (data) {
+      setDreams(data.map(fromRow));
+    }
     setLoading(false);
-  }, [supabase, userId]);
+  }, [supabase, userId, toast]);
 
   useEffect(() => {
     refetch();
   }, [refetch]);
 
+  // Keeping the profile's name sensible, without ever destroying a real one.
+  //
+  // The old version of this asked "is there a name?" and, on ANY empty answer
+  // (including a failed request), wrote the email prefix over it: a network
+  // blip during a token refresh could permanently replace a person's nickname.
+  // Now it only writes when the server has positively confirmed there is
+  // nothing there, and each write is shaped so that it cannot overwrite:
+  //   missing  -> insert the row, doing nothing if one appeared meanwhile
+  //   unnamed  -> set the name only where it is still null
+  //   error    -> write nothing; just try a plain read again
+  const { name: initialName, state: profileState } = initialProfile;
   useEffect(() => {
+    if (profileState === "ok") return;
+    let cancelled = false;
+    const fallback = userEmail.split("@")[0] || "You";
+
     (async () => {
-      const { data } = await supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle();
-      if (data?.display_name) {
-        setDisplayName(data.display_name);
+      if (profileState === "error") {
+        const { data, error } = await supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle();
+        if (!cancelled && !error && data?.display_name) setDisplayName(data.display_name);
         return;
       }
-      // No row (account predates the profile trigger) or a null name,
-      // heal it once with an email-derived fallback instead of leaving it
-      // to show as "Someone" everywhere forever.
-      const fallback = userEmail.split("@")[0] || "You";
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({ id: userId, display_name: fallback }, { onConflict: "id" });
-      if (!error) setDisplayName(fallback);
+      const { error } =
+        profileState === "missing"
+          ? await supabase.from("profiles").upsert({ id: userId, display_name: fallback }, { onConflict: "id", ignoreDuplicates: true })
+          : await supabase.from("profiles").update({ display_name: fallback }).eq("id", userId).is("display_name", null);
+      if (!cancelled && !error && !initialName) setDisplayName(fallback);
     })();
-  }, [supabase, userId, userEmail]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, userId, userEmail, profileState, initialName]);
 
   const updateDisplayName = useCallback(
     async (name: string) => {
       const trimmed = name.trim();
       if (!trimmed) throw new Error("Name can't be empty.");
+      if (trimmed.length > DISPLAY_NAME_MAX) throw new Error(`Keep it under ${DISPLAY_NAME_MAX} characters.`);
       const { error } = await supabase
         .from("profiles")
         .upsert({ id: userId, display_name: trimmed }, { onConflict: "id" });
@@ -179,9 +232,14 @@ export function DreamProvider({
 
   const togglePublic = useCallback(
     async (id: string, isPublic: boolean) => {
-      const { error } = await supabase.from("dreams").update({ is_public: isPublic }).eq("id", id);
-      if (error) throw new Error(error.message);
+      // Optimistic: flip it on screen now, and put it back if the save fails.
+      // Waiting a network round trip to move a toggle makes it feel broken.
       setDreams((prev) => prev.map((d) => (d.id === id ? { ...d, isPublic } : d)));
+      const { error } = await supabase.from("dreams").update({ is_public: isPublic }).eq("id", id);
+      if (error) {
+        setDreams((prev) => prev.map((d) => (d.id === id ? { ...d, isPublic: !isPublic } : d)));
+        throw new Error(error.message);
+      }
       router.refresh();
     },
     [supabase, router]
@@ -189,9 +247,12 @@ export function DreamProvider({
 
   const toggleFavorite = useCallback(
     async (id: string, isFavorite: boolean) => {
-      const { error } = await supabase.from("dreams").update({ is_favorite: isFavorite }).eq("id", id);
-      if (error) throw new Error(error.message);
       setDreams((prev) => prev.map((d) => (d.id === id ? { ...d, isFavorite } : d)));
+      const { error } = await supabase.from("dreams").update({ is_favorite: isFavorite }).eq("id", id);
+      if (error) {
+        setDreams((prev) => prev.map((d) => (d.id === id ? { ...d, isFavorite: !isFavorite } : d)));
+        throw new Error(error.message);
+      }
       router.refresh();
     },
     [supabase, router]

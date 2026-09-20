@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { DreamProvider } from "@/context/DreamContext";
+import { DreamProvider, type ProfileState } from "@/context/DreamContext";
 import { AchievementProvider } from "@/context/AchievementContext";
 import Navbar from "@/components/Navbar";
 import AchievementCelebration from "@/components/AchievementCelebration";
+import { ToastProvider } from "@/components/Toast";
+import { toLocalDateString } from "@/lib/utils";
+import MobileTabBar from "@/components/MobileTabBar";
+import NavProgress from "@/components/NavProgress";
 
 // DreamProvider needs a real logged-in user (dreams are fetched scoped to
 // them), which /login and /signup don't have, so this route group, not
@@ -23,13 +27,30 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (!user) redirect("/login");
 
+  // The one place the profile is looked up for the shell of the app. The
+  // outcome is passed down as facts (a name and what we found), so the client
+  // never has to guess from an empty result whether "no name" means "no name
+  // yet" or "the request failed".
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .maybeSingle();
+  const profileName = profile?.display_name?.trim() ?? "";
+  const profileState: ProfileState = profileError ? "error" : !profile ? "missing" : !profileName ? "unnamed" : "ok";
+
   return (
-    <DreamProvider userId={user.id} userEmail={user.email ?? ""}>
-      <AchievementProvider userId={user.id}>
-        <Navbar />
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</main>
-        <AchievementCelebration />
-      </AchievementProvider>
-    </DreamProvider>
+    <ToastProvider>
+      <DreamProvider userId={user.id} userEmail={user.email ?? ""} serverToday={toLocalDateString(new Date())} initialProfile={{ name: profileName, state: profileState }}>
+        <AchievementProvider userId={user.id}>
+          <NavProgress />
+          <Navbar />
+          {/* pb-28 on phones leaves room for the fixed tab bar under the content. */}
+          <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-28 md:pb-8">{children}</main>
+          <MobileTabBar />
+          <AchievementCelebration />
+        </AchievementProvider>
+      </DreamProvider>
+    </ToastProvider>
   );
 }

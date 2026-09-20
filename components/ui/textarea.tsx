@@ -2,12 +2,15 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+// `field-sizing-content` makes the box grow with what's typed (no fixed
+// height to scroll inside while writing a long dream), capped so it can't
+// push the form's Save button off the screen.
 function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
   return (
     <textarea
       data-slot="textarea"
       className={cn(
-        "border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "field placeholder:text-muted-foreground/60 flex field-sizing-content min-h-28 max-h-72 w-full px-3.5 py-3 text-base leading-relaxed disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
         className
       )}
       {...props}

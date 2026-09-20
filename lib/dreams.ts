@@ -18,6 +18,7 @@ export type DreamRow = {
   is_public: boolean;
   is_favorite: boolean;
   user_id: string;
+  created_at?: string;
 };
 
 export function fromRow(row: DreamRow): Dream {
@@ -34,5 +35,6 @@ export function fromRow(row: DreamRow): Dream {
     vividness: row.vividness,
     isPublic: row.is_public,
     isFavorite: row.is_favorite,
+    createdAt: row.created_at,
   };
 }

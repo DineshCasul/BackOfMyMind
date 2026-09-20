@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,12 +27,17 @@ export default function EditProfileDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Reset only on the closed-to-open change. Depending on `currentName` too
+  // would wipe what someone is typing whenever the saved name changes in the
+  // background (a late profile load, a refresh).
+  const currentNameRef = useRef(currentName);
+  currentNameRef.current = currentName;
   useEffect(() => {
     if (open) {
-      setName(currentName);
+      setName(currentNameRef.current);
       setError(null);
     }
-  }, [open, currentName]);
+  }, [open]);
 
   async function handleSave() {
     if (isSaving) return;

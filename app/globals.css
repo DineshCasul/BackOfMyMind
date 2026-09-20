@@ -6,6 +6,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-quicksand);
   --font-serif: var(--font-fraunces);
+  --font-hand: var(--font-caveat), "Segoe Script", cursive;
   --font-logo: "logo", var(--font-fraunces), serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -36,6 +37,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-gold: var(--gold);
   --color-mood-happy: var(--mood-happy);
   --color-mood-excited: var(--mood-excited);
   --color-mood-peaceful: var(--mood-peaceful);
@@ -80,6 +82,12 @@
 
   --destructive: oklch(0.64 0.2 25);
 
+  /* A warm second accent, pale moon gold, for the things that are
+     "starred": favourites, vividness stars, streaks. Lavender stays the
+     one action colour; gold only ever means "this one is special", so
+     the two never compete for the same job. */
+  --gold: oklch(0.84 0.13 88);
+
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.78 0.1 280 / 60%);
@@ -117,6 +125,23 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* A little more air than the default: dream entries are long-form
+       reading, and Quicksand's round letters are at their best with room. */
+    line-height: 1.65;
+    letter-spacing: 0.005em;
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Titles use the SOFT axis fully: rounded, warmer serifs, and slightly
+     tighter tracking so large headings feel composed, not spaced out. */
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-serif {
+    font-variation-settings: "SOFT" 100;
+    letter-spacing: -0.012em;
   }
 }
 
@@ -318,4 +343,592 @@
   src: url("/Fonts/house-minimalist.otf") format("opentype");
   font-style: italic;
   font-display: swap;
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Shared visual language                                              */
+/* ------------------------------------------------------------------ */
+
+/* Dark surfaces get depth from three quiet cues instead of a heavier
+   border: a faint top highlight (light hits the upper edge), a slightly
+   lighter-to-darker vertical gradient, and a soft shadow underneath.
+   No backdrop-filter here on purpose: lists render dozens of these, and
+   a blur per card is exactly the kind of per-frame cost the star and aurora
+   comments above are avoiding. The two places that do blur (the dialog
+   and the login card) are single elements. */
+.surface {
+  background: linear-gradient(180deg, oklch(0.235 0.04 268), oklch(0.205 0.036 267));
+  border: 1px solid var(--border);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 7%),
+    0 1px 2px oklch(0 0 0 / 35%),
+    0 14px 30px -20px oklch(0 0 0 / 80%);
+}
+
+/* One look for every text field (Input, Textarea), so a form is never a
+   mix of styles. The glow on focus is a box-shadow ring, not an outline,
+   so it follows the rounded corners. */
+.field {
+  background-color: oklch(1 0 0 / 4%);
+  border: 1px solid oklch(1 0 0 / 11%);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 1px 2px oklch(0 0 0 / 25%);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+.field:hover:not(:disabled) {
+  border-color: oklch(1 0 0 / 20%);
+}
+.field:focus-visible,
+.field:focus-within {
+  outline: none;
+  background-color: oklch(1 0 0 / 6%);
+  border-color: oklch(0.78 0.1 280 / 70%);
+  box-shadow:
+    inset 0 1px 2px oklch(0 0 0 / 20%),
+    0 0 0 4px oklch(0.78 0.1 280 / 16%);
+}
+.field[aria-invalid="true"] {
+  border-color: oklch(0.64 0.2 25 / 70%);
+  box-shadow: 0 0 0 4px oklch(0.64 0.2 25 / 14%);
+}
+
+/* Staggered entrance: set --i on each child (0, 1, 2 ...) and they
+   rise in one after another. Transform and opacity only, and `both` keeps
+   the "from" state applied during the delay so nothing flashes first. */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.reveal {
+  animation: reveal-up 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(min(var(--i, 0), 8) * 60ms);
+}
+
+/* A short sideways shake for "that didn't work" (a rejected login). */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+.animate-shake {
+  animation: shake 0.45s ease-in-out;
+}
+
+/* Loading placeholders: a light band sliding across via transform (the
+   only compositor-friendly way to animate a shimmer). */
+@keyframes shimmer-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: oklch(1 0 0 / 6%);
+  border-radius: var(--radius-md);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 9%), transparent);
+  animation: shimmer-slide 1.6s ease-in-out infinite;
+}
+
+/* A soft moonlit halo behind the logo mark. */
+@keyframes halo-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.18);
+  }
+}
+.animate-halo {
+  animation: halo-pulse 4.5s ease-in-out infinite;
+}
+
+/* Thin, tinted scrollbars (dialogs, carousels) instead of the default
+   bright system ones. Firefox reads the first two properties, WebKit and
+   Chromium the pseudo-elements. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(1 0 0 / 18%) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: oklch(1 0 0 / 16%);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: oklch(1 0 0 / 28%);
+}
+
+::selection {
+  background: oklch(0.78 0.1 280 / 40%);
+}
+
+/* ------------------------------------------------------------------ */
+/* Journal + dream touches                                             */
+/* ------------------------------------------------------------------ */
+
+.font-hand {
+  font-family: var(--font-hand);
+}
+
+/* Faint moonlight glow on display text (page titles, the logo). */
+.text-moonglow {
+  text-shadow: 0 0 28px oklch(0.78 0.1 280 / 45%);
+}
+
+/* Notebook paper, in the dark: pale horizontal rules, and (for `.ruled`)
+   a rose margin line down the left. The rule spacing is one variable so the
+   text sitting on it can use the same number as its line-height and land
+   exactly between the lines instead of drifting off them. */
+.ruled-lines,
+.ruled {
+  --line: 28px;
+  line-height: var(--line);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--line) - 1px),
+    oklch(1 0 0 / 6%) calc(var(--line) - 1px),
+    oklch(1 0 0 / 6%) var(--line)
+  );
+  background-attachment: local;
+}
+.ruled {
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 2.75rem,
+      oklch(0.72 0.13 20 / 26%) 2.75rem,
+      oklch(0.72 0.13 20 / 26%) calc(2.75rem + 1px),
+      transparent calc(2.75rem + 1px)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(var(--line) - 1px),
+      oklch(1 0 0 / 6%) calc(var(--line) - 1px),
+      oklch(1 0 0 / 6%) var(--line)
+    );
+}
+
+/* A bookmark ribbon hanging from the top edge of an entry. The colour comes
+   from --ribbon (the entry's mood), and the notch at the bottom is a clip-path,
+   so it is one element with no images. */
+.ribbon {
+  position: absolute;
+  top: -1px;
+  right: 1.1rem;
+  width: 1rem;
+  height: 1.9rem;
+  background: linear-gradient(180deg, var(--ribbon, var(--primary)), color-mix(in oklch, var(--ribbon, var(--primary)) 70%, black));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+  opacity: 0.9;
+  transition: height 0.3s ease, opacity 0.3s ease;
+}
+.group:hover .ribbon {
+  height: 2.3rem;
+  opacity: 1;
+}
+
+/* Words that "come into focus": blur and lift away as the page settles in.
+   Only used on a handful of headings, since animating `filter` is heavier
+   than transform and opacity. */
+@keyframes focus-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+.animate-focus-in {
+  animation: focus-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Slow drifting specks of light: transform only, staggered by inline
+   delay/duration/left, so a dozen of them cost almost nothing. */
+@keyframes mote-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.6);
+  }
+  20% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-70vh) scale(1.1);
+  }
+}
+.animate-mote {
+  /* `both` keeps the invisible first frame during the start delay, so specks
+     don't sit at the bottom of the page until their turn comes. */
+  animation: mote-rise linear infinite both;
+}
+
+
+/* ------------------------------------------------------------------ */
+/* The dream sky (components/Starfield.tsx)                            */
+/* ------------------------------------------------------------------ */
+
+/* Every layer here is `position: fixed` and static or transform/opacity
+   animated only, so the whole backdrop is a handful of compositor layers
+   that never repaint while you scroll. Nothing uses filter: blur on an
+   animated element. The soft edges come from gradients instead. */
+.dream-sky {
+  position: fixed;
+  inset: 0;
+  z-index: -20;
+  pointer-events: none;
+  background:
+    radial-gradient(75% 55% at 12% -8%, oklch(0.42 0.14 288 / 42%), transparent 62%),
+    radial-gradient(60% 50% at 96% 4%, oklch(0.55 0.12 78 / 20%), transparent 62%),
+    radial-gradient(90% 60% at 50% 118%, oklch(0.36 0.13 305 / 42%), transparent 68%),
+    linear-gradient(180deg, oklch(0.2 0.048 276) 0%, oklch(0.15 0.032 266) 55%, oklch(0.125 0.03 268) 100%);
+}
+
+/* Two extra star layers that only change opacity, out of step with each
+   other, so the sky shimmers instead of being a fixed picture. Opacity on
+   a composited layer costs almost nothing. */
+@keyframes twinkle-a {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes twinkle-b {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.2;
+  }
+}
+.sky-twinkle {
+  position: fixed;
+  inset: 0;
+  z-index: -18;
+  pointer-events: none;
+  background-repeat: repeat;
+}
+.sky-twinkle-a {
+  background-image:
+    radial-gradient(1.6px 1.6px at 40px 60px, oklch(1 0 0 / 90%), transparent 100%),
+    radial-gradient(1.2px 1.2px at 210px 150px, oklch(0.95 0.05 280 / 85%), transparent 100%),
+    radial-gradient(1.8px 1.8px at 120px 250px, oklch(1 0 0 / 80%), transparent 100%),
+    radial-gradient(1.2px 1.2px at 300px 30px, oklch(0.95 0.06 90 / 80%), transparent 100%);
+  background-size: 340px 300px;
+  animation: twinkle-a 5.5s ease-in-out infinite alternate;
+}
+.sky-twinkle-b {
+  background-image:
+    radial-gradient(1.4px 1.4px at 90px 40px, oklch(1 0 0 / 85%), transparent 100%),
+    radial-gradient(1.8px 1.8px at 250px 210px, oklch(0.95 0.05 280 / 80%), transparent 100%),
+    radial-gradient(1.2px 1.2px at 30px 190px, oklch(1 0 0 / 80%), transparent 100%);
+  background-size: 410px 350px;
+  animation: twinkle-b 7.5s ease-in-out infinite alternate;
+  animation-delay: -3s;
+}
+
+/* One shooting star, now and then: a thin fading line that crosses a
+   corner of the sky and is invisible for most of its 22 second loop. */
+@keyframes shooting-star {
+  0%,
+  93% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(19deg);
+  }
+  94% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(55vw, 20vw, 0) rotate(19deg);
+  }
+}
+.shooting-star {
+  position: fixed;
+  top: 9%;
+  left: 8%;
+  z-index: -17;
+  width: 140px;
+  height: 1.5px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 90%));
+  opacity: 0;
+  animation: shooting-star 22s linear infinite;
+  animation-delay: 6s;
+}
+
+/* Film grain: fine static noise (an SVG turbulence filter as a data
+   URI, so no image file) at a very low opacity. It breaks up the smooth
+   gradients that otherwise show banding on dark screens, and gives the
+   dark a soft, filmic texture. */
+.sky-grain {
+  position: fixed;
+  inset: 0;
+  z-index: -16;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Aurora curtains and glinting stars                                  */
+/* ------------------------------------------------------------------ */
+
+/* Aurora, drawn the way it looks in a photograph: tall vertical curtains of
+   light that hang from the top of the sky, sway sideways, lean, and breathe
+   in and out, each in its own colour and at its own speed, so they overlap
+   and mix (`screen` blending adds their light together instead of covering
+   one another). Each band fades to nothing at its sides (a horizontal mask)
+   and the whole group fades out toward the bottom of the screen (a vertical
+   mask on the wrapper). Movement is transform and opacity only. */
+.aurora {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 78vh;
+  z-index: -19;
+  pointer-events: none;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 100%);
+}
+@keyframes aurora-sway {
+  0% {
+    transform: translate3d(0, 0, 0) skewX(-9deg) scaleY(0.82);
+    opacity: 0.2;
+  }
+  45% {
+    transform: translate3d(7vw, 0, 0) skewX(7deg) scaleY(1.06);
+    opacity: 0.62;
+  }
+  100% {
+    transform: translate3d(-5vw, 0, 0) skewX(-4deg) scaleY(0.9);
+    opacity: 0.32;
+  }
+}
+.aurora-band {
+  position: absolute;
+  top: -12%;
+  height: 125%;
+  width: max(30vw, 260px);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--c) 26%,
+    color-mix(in oklch, var(--c) 45%, transparent) 58%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 38%, black 62%, transparent);
+  mask-image: linear-gradient(90deg, transparent, black 38%, black 62%, transparent);
+  mix-blend-mode: screen;
+  transform-origin: 50% 0;
+  will-change: transform, opacity;
+  animation: aurora-sway var(--dur, 18s) ease-in-out infinite alternate;
+  animation-delay: var(--delay, 0s);
+}
+
+/* Bright stars that glint: a pin-point core with a thin four-point cross
+   that swells, turns a quarter, and fades, like real starlight catching the
+   eye. Each has its own size, speed and delay, so they never pulse together. */
+@keyframes glint {
+  0%,
+  100% {
+    opacity: 0.1;
+    transform: scale(0.5) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+}
+.glint {
+  position: fixed;
+  z-index: -17;
+  width: var(--s, 14px);
+  height: var(--s, 14px);
+  pointer-events: none;
+  background: radial-gradient(circle, oklch(1 0 0) 0 1.3px, oklch(1 0 0 / 35%) 2px, transparent 4px);
+  opacity: 0;
+  animation: glint var(--dur, 6s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+.glint::before,
+.glint::after {
+  content: "";
+  position: absolute;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 90%) 50%, transparent);
+}
+.glint::before {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+}
+.glint::after {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, oklch(1 0 0 / 90%) 50%, transparent);
+}
+
+
+/* ------------------------------------------------------------------ */
+/* The sleeping moon (components/SleepingMoon.tsx)                     */
+/* ------------------------------------------------------------------ */
+
+/* Replaces the old drifting "z z Z". A crescent moon asleep on a cloud,
+   dreaming: it bobs as if breathing, small dream bubbles float up from it and
+   fade, and the stars around it twinkle out of step. All transform/opacity. */
+@keyframes moon-breathe {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(2deg);
+  }
+}
+@keyframes bubble-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.5);
+  }
+  25% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-46px) scale(1.15);
+  }
+}
+@keyframes cloud-drift {
+  0%,
+  100% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+}
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+.animate-moon-breathe {
+  animation: moon-breathe 6s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+.animate-bubble-rise {
+  animation: bubble-rise 5s ease-out infinite both;
+}
+.animate-cloud-drift {
+  animation: cloud-drift 9s ease-in-out infinite;
+}
+.animate-sparkle {
+  animation: sparkle 3.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* ------------------------------------------------------------------ */
+/* Light charts (the Patterns page)                                    */
+/* ------------------------------------------------------------------ */
+
+/* Bars and segments grow into place. One transform per element (scaleX for
+   the spectrum bar, scaleY for columns), with the index as a small stagger:
+   no chart library, and nothing that runs after it has finished. */
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes grow-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.grow-x {
+  transform-origin: left center;
+  animation: grow-x 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.grow-y {
+  transform-origin: center bottom;
+  animation: grow-y 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+/* A slow shine that crosses an earned badge when it is hovered. */
+@keyframes medal-shine {
+  from {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(220%) skewX(-20deg);
+  }
+}
+.medal:hover .medal-shine {
+  animation: medal-shine 0.9s ease-out;
 }

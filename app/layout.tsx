@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { Quicksand, Fraunces } from "next/font/google";
+import { Quicksand, Fraunces, Caveat } from "next/font/google";
 import Starfield from "@/components/Starfield";
-import HeaderGlow from "@/components/HeaderGlow";
 import "./globals.css";
 
 // Soft, rounded terminals read as gentler than a neutral grotesk like the
@@ -15,6 +14,15 @@ const quicksand = Quicksand({
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
+  axes: ["SOFT", "opsz"],
+});
+
+// A handwriting face, used sparingly (dates, margin notes, the little
+// "last night, I..." prompts) so the journal feels written in, not typeset.
+// Everything long-form stays in Quicksand/Fraunces for legibility.
+const caveat = Caveat({
+  subsets: ["latin"],
+  variable: "--font-caveat",
 });
 
 export const metadata: Metadata = {
@@ -28,10 +36,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${quicksand.variable} ${fraunces.variable}`}>
+    <html lang="en" className={`${quicksand.variable} ${fraunces.variable} ${caveat.variable}`}>
       <body className="relative min-h-screen font-sans">
         <Starfield />
-        <HeaderGlow />
         {children}
       </body>
     </html>

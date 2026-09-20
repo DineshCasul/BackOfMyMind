@@ -15,6 +15,10 @@ import {
 type AchievementContextValue = {
   stats: AchievementStats;
   unlockedIds: Set<string>;
+  /** achievement id -> when it was first unlocked (only badges already saved). */
+  unlockedAt: Map<string, string>;
+  /** False while like counts are still loading: like-based badges may briefly read as locked. */
+  likesReady: boolean;
   loading: boolean;
   celebrating: Achievement | null;
   dismissCelebration: () => void;
@@ -126,7 +130,10 @@ export function AchievementProvider({ userId, children }: { userId: string; chil
       )
       .select()
       .then(({ data }) => {
-        newIds.forEach((id) => pendingRef.current.delete(id));
+        // Deliberately NOT removed from pendingRef: each id is written at most
+        // once per session. If the response ever lacks a row (or the write
+        // fails), removing it would make the diff see it as "new" again and
+        // re-send it forever.
         if (!data) return;
         setStored((prev) => {
           const next = new Map(prev ?? []);
@@ -145,17 +152,23 @@ export function AchievementProvider({ userId, children }: { userId: string; chil
 
   const dismissCelebration = useCallback(() => setCelebrating(null), []);
 
-  const loading = dreamsLoading || stored === null || likesReceived === null;
+  // The page can render as soon as dreams and saved badges are in. Likes load
+  // in parallel and only affect the few like-based badges.
+  const loading = dreamsLoading || stored === null;
+  const likesReady = likesReceived !== null;
+  const unlockedAt = useMemo(() => stored ?? new Map<string, string>(), [stored]);
 
   const value: AchievementContextValue = useMemo(
     () => ({
       stats,
       unlockedIds,
+      unlockedAt,
+      likesReady,
       loading,
       celebrating,
       dismissCelebration,
     }),
-    [stats, unlockedIds, loading, celebrating, dismissCelebration]
+    [stats, unlockedIds, unlockedAt, likesReady, loading, celebrating, dismissCelebration]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
